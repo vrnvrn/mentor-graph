@@ -12,13 +12,19 @@ export type UserProfile = {
   txHash?: string;
 }
 
-export async function createUserProfile(
-  displayName: string,
-  skills: string = '',
-  timezone: string = '',
-  spaceId: string = 'local-dev',
-  createdAt?: string
-): Promise<{ key: string; txHash: string }> {
+export async function createUserProfile({
+  displayName,
+  skills = '',
+  timezone = '',
+  spaceId = 'local-dev',
+  createdAt,
+}: {
+  displayName: string;
+  skills?: string;
+  timezone?: string;
+  spaceId?: string;
+  createdAt?: string;
+}): Promise<{ key: string; txHash: string }> {
   const walletClient = getWalletClient();
   const enc = new TextEncoder();
   const timestamp = createdAt || new Date().toISOString();

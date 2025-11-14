@@ -13,12 +13,12 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: 'displayName is required' });
       }
 
-      const { key, txHash } = await createUserProfile(
+      const { key, txHash } = await createUserProfile({
         displayName,
-        skills || '',
-        timezone || '',
-        spaceId || 'local-dev'
-      );
+        skills: skills || '',
+        timezone: timezone || '',
+        spaceId: spaceId || 'local-dev',
+      });
 
       res.json({ key, txHash });
     } else {
