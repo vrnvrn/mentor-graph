@@ -41,14 +41,25 @@ type MeData = {
 export default function Me() {
   const [data, setData] = useState<MeData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState<string | null>(null);
 
   const fetchMe = async () => {
     try {
       const res = await fetch('/api/me');
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('Error fetching /api/me:', res.status, errorData);
+        setError(`Failed to load data: ${errorData.error || res.statusText}`);
+        return;
+      }
       const meData = await res.json();
+      console.log('Fetched /api/me:', meData);
       setData(meData);
+      setError(null);
     } catch (err) {
       console.error('Error fetching /api/me:', err);
+      setError('Network error loading data');
     } finally {
       setLoading(false);
     }
@@ -60,79 +71,121 @@ export default function Me() {
 
   const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting('profile');
+    setError(null);
     const formData = new FormData(e.target as HTMLFormElement);
     const displayName = formData.get('displayName') as string;
     const skills = formData.get('skills') as string;
     const timezone = formData.get('timezone') as string;
 
+    const payload = {
+      action: 'createProfile',
+      displayName,
+      skills,
+      timezone,
+    };
+    console.log('Creating profile:', payload);
+
     try {
       const res = await fetch('/api/me', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'createProfile',
-          displayName,
-          skills,
-          timezone,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
+        const result = await res.json();
+        console.log('Profile created:', result);
         fetchMe();
+      } else {
+        const errorData = await res.json();
+        console.error('Error creating profile:', res.status, errorData);
+        setError(`Failed to create profile: ${errorData.error || res.statusText}`);
       }
     } catch (err) {
       console.error('Error creating profile:', err);
+      setError('Network error creating profile');
+    } finally {
+      setSubmitting(null);
     }
   };
 
   const handleCreateAsk = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting('ask');
+    setError(null);
     const formData = new FormData(e.target as HTMLFormElement);
     const skill = formData.get('skill') as string;
     const message = formData.get('message') as string;
+
+    const payload = {
+      action: 'createAsk',
+      skill,
+      message,
+    };
+    console.log('Creating ask:', payload);
 
     try {
       const res = await fetch('/api/me', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'createAsk',
-          skill,
-          message,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
+        const result = await res.json();
+        console.log('Ask created:', result);
         (e.target as HTMLFormElement).reset();
         fetchMe();
+      } else {
+        const errorData = await res.json();
+        console.error('Error creating ask:', res.status, errorData);
+        setError(`Failed to create ask: ${errorData.error || res.statusText}`);
       }
     } catch (err) {
       console.error('Error creating ask:', err);
+      setError('Network error creating ask');
+    } finally {
+      setSubmitting(null);
     }
   };
 
   const handleCreateOffer = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting('offer');
+    setError(null);
     const formData = new FormData(e.target as HTMLFormElement);
     const skill = formData.get('skill') as string;
     const message = formData.get('message') as string;
     const availabilityWindow = formData.get('availabilityWindow') as string;
 
+    const payload = {
+      action: 'createOffer',
+      skill,
+      message,
+      availabilityWindow,
+    };
+    console.log('Creating offer:', payload);
+
     try {
       const res = await fetch('/api/me', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'createOffer',
-          skill,
-          message,
-          availabilityWindow,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
+        const result = await res.json();
+        console.log('Offer created:', result);
         (e.target as HTMLFormElement).reset();
         fetchMe();
+      } else {
+        const errorData = await res.json();
+        console.error('Error creating offer:', res.status, errorData);
+        setError(`Failed to create offer: ${errorData.error || res.statusText}`);
       }
     } catch (err) {
       console.error('Error creating offer:', err);
+      setError('Network error creating offer');
+    } finally {
+      setSubmitting(null);
     }
   };
 
@@ -147,6 +200,12 @@ export default function Me() {
   return (
     <main style={{ padding: '20px' }}>
       <h1>My Dashboard</h1>
+
+      {error && (
+        <div style={{ marginBottom: '20px', padding: '10px', background: '#ffebee', border: '1px solid #f44336', color: '#c62828' }}>
+          <strong>Error:</strong> {error}
+        </div>
+      )}
 
       <section style={{ marginBottom: '40px', padding: '20px', border: '1px solid #ccc', borderRadius: '4px' }}>
         <h2>Wallet & Profile</h2>
@@ -184,7 +243,9 @@ export default function Me() {
                 <input type="text" name="timezone" style={{ marginLeft: '10px' }} />
               </label>
             </div>
-            <button type="submit">Create Profile</button>
+            <button type="submit" disabled={submitting === 'profile'}>
+              {submitting === 'profile' ? 'Creating...' : 'Create Profile'}
+            </button>
           </form>
         )}
       </section>
@@ -204,7 +265,9 @@ export default function Me() {
               <input type="text" name="message" required style={{ marginLeft: '10px' }} />
             </label>
           </div>
-          <button type="submit">Create Ask</button>
+          <button type="submit" disabled={submitting === 'ask'}>
+            {submitting === 'ask' ? 'Creating...' : 'Create Ask'}
+          </button>
         </form>
 
         <div>
@@ -247,7 +310,9 @@ export default function Me() {
               <input type="text" name="availabilityWindow" required style={{ marginLeft: '10px' }} />
             </label>
           </div>
-          <button type="submit">Create Offer</button>
+          <button type="submit" disabled={submitting === 'offer'}>
+            {submitting === 'offer' ? 'Creating...' : 'Create Offer'}
+          </button>
         </form>
 
         <div>
