@@ -7,10 +7,12 @@ export default function Profiles() {
   const [timezone, setTimezone] = useState('');
   const [spaceId, setSpaceId] = useState('local-dev');
   const [lastTxHash, setLastTxHash] = useState<string | null>(null);
+  const [skillFilter, setSkillFilter] = useState('');
 
-  const fetchProfiles = async () => {
+  const fetchProfiles = async (skill?: string) => {
     try {
-      const res = await fetch('/api/profiles');
+      const url = skill ? `/api/profiles?skill=${encodeURIComponent(skill)}` : '/api/profiles';
+      const res = await fetch(url);
       const data = await res.json();
       setProfiles(data || []);
     } catch (err) {
@@ -19,8 +21,8 @@ export default function Profiles() {
   };
 
   useEffect(() => {
-    fetchProfiles();
-  }, []);
+    fetchProfiles(skillFilter || undefined);
+  }, [skillFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +39,7 @@ export default function Profiles() {
         setSkills('');
         setTimezone('');
         setSpaceId('local-dev');
-        fetchProfiles();
+        fetchProfiles(skillFilter || undefined);
       }
     } catch (err) {
       console.error('Error creating profile:', err);
@@ -98,6 +100,19 @@ export default function Profiles() {
           <strong>Last Transaction Hash:</strong> {lastTxHash}
         </div>
       )}
+
+      <div style={{ margin: '20px 0' }}>
+        <label>
+          Filter by skill:
+          <input
+            type="text"
+            value={skillFilter}
+            onChange={(e) => setSkillFilter(e.target.value)}
+            placeholder="e.g. solidity"
+            style={{ marginLeft: '10px', padding: '5px' }}
+          />
+        </label>
+      </div>
 
       <h2>Profile List</h2>
       <ul style={{ listStyle: 'none', padding: 0 }}>

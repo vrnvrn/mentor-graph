@@ -47,11 +47,16 @@ export async function createUserProfile(
   return { key: entityKey, txHash };
 }
 
-export async function listUserProfiles(): Promise<UserProfile[]> {
+export async function listUserProfiles(skill?: string): Promise<UserProfile[]> {
   const publicClient = getPublicClient();
   const query = publicClient.buildQuery();
-  const result = await query
-    .where(eq('type', 'user_profile'))
+  let queryBuilder = query.where(eq('type', 'user_profile'));
+  
+  if (skill) {
+    queryBuilder = queryBuilder.where(eq('skills', skill));
+  }
+  
+  const result = await queryBuilder
     .withAttributes(true)
     .withPayload(true)
     .limit(100)

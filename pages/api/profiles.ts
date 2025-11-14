@@ -3,7 +3,8 @@ import { createUserProfile, listUserProfiles } from "../../src/arkiv/profiles"
 export default async function handler(req: any, res: any) {
   try {
     if (req.method === 'GET') {
-      const profiles = await listUserProfiles();
+      const skill = req.query.skill as string | undefined;
+      const profiles = await listUserProfiles(skill);
       res.json(profiles);
     } else if (req.method === 'POST') {
       const { displayName, skills, timezone, spaceId } = req.body;
