@@ -48,7 +48,7 @@ export default async function handler(req: any, res: any) {
       const walletClient = getWalletClient();
       const enc = new TextEncoder();
 
-      const { entityKey } = await walletClient.createEntity({
+      const { entityKey, txHash } = await walletClient.createEntity({
         payload: enc.encode(JSON.stringify({
           displayName,
           skills: skills || '',
@@ -65,7 +65,7 @@ export default async function handler(req: any, res: any) {
         expiresIn: 31536000, // 1 year
       });
 
-      res.json({ key: entityKey });
+      res.json({ key: entityKey, txHash });
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
