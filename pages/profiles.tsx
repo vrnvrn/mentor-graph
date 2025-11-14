@@ -5,6 +5,7 @@ export default function Profiles() {
   const [displayName, setDisplayName] = useState('');
   const [skills, setSkills] = useState('');
   const [timezone, setTimezone] = useState('');
+  const [spaceId, setSpaceId] = useState('local-dev');
   const [lastTxHash, setLastTxHash] = useState<string | null>(null);
 
   const fetchProfiles = async () => {
@@ -27,7 +28,7 @@ export default function Profiles() {
       const res = await fetch('/api/profiles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName, skills, timezone }),
+        body: JSON.stringify({ displayName, skills, timezone, spaceId }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -35,6 +36,7 @@ export default function Profiles() {
         setDisplayName('');
         setSkills('');
         setTimezone('');
+        setSpaceId('local-dev');
         fetchProfiles();
       }
     } catch (err) {
@@ -78,6 +80,16 @@ export default function Profiles() {
             />
           </label>
         </div>
+        <div>
+          <label>
+            Space ID:
+            <input
+              type="text"
+              value={spaceId}
+              onChange={(e) => setSpaceId(e.target.value)}
+            />
+          </label>
+        </div>
         <button type="submit">Create Profile</button>
       </form>
 
@@ -88,11 +100,35 @@ export default function Profiles() {
       )}
 
       <h2>Profile List</h2>
-      <ul>
+      <ul style={{ listStyle: 'none', padding: 0 }}>
         {profiles.map((profile: any) => (
-          <li key={profile.key}>
-            <strong>{profile.displayName || 'N/A'}</strong> - {profile.skills || 'N/A'} - {profile.timezone || 'N/A'}
-            <div style={{ fontSize: '12px', color: '#666' }}>Key: {profile.key}</div>
+          <li key={profile.key} style={{ margin: '15px 0', padding: '15px', border: '1px solid #ccc', borderRadius: '4px' }}>
+            <div style={{ marginBottom: '8px' }}>
+              <strong style={{ fontSize: '18px' }}>{profile.displayName || 'N/A'}</strong>
+            </div>
+            <div style={{ fontSize: '14px', marginBottom: '4px' }}>
+              <strong>Skills:</strong> {profile.skills || 'N/A'}
+            </div>
+            <div style={{ fontSize: '14px', marginBottom: '4px' }}>
+              <strong>Timezone:</strong> {profile.timezone || 'N/A'}
+            </div>
+            <div style={{ fontSize: '14px', marginBottom: '4px' }}>
+              <strong>Space ID:</strong> {profile.spaceId || 'N/A'}
+            </div>
+            <div style={{ fontSize: '14px', marginBottom: '4px' }}>
+              <strong>Wallet:</strong> {profile.wallet || 'N/A'}
+            </div>
+            <div style={{ fontSize: '14px', marginBottom: '4px' }}>
+              <strong>Created:</strong> {profile.createdAt ? new Date(profile.createdAt).toLocaleString() : 'N/A'}
+            </div>
+            {profile.txHash && (
+              <div style={{ fontSize: '12px', marginBottom: '4px', color: '#4caf50' }}>
+                <strong>Tx Hash:</strong> {profile.txHash}
+              </div>
+            )}
+            <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+              <strong>Entity Key:</strong> {profile.key}
+            </div>
           </li>
         ))}
       </ul>
