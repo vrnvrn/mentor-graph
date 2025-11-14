@@ -134,7 +134,7 @@ export default function Profiles() {
               <strong>Wallet:</strong> {profile.wallet || 'N/A'}
             </div>
             <div style={{ fontSize: '14px', marginBottom: '4px' }}>
-              <strong>Created:</strong> {profile.createdAt ? new Date(profile.createdAt).toLocaleString() : 'N/A'}
+              <strong>Created:</strong> {profile.createdAt || 'N/A'}
             </div>
             {profile.txHash && (
               <div style={{ fontSize: '12px', marginBottom: '4px', color: '#4caf50' }}>

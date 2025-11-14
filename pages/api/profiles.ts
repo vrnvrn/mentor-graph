@@ -17,7 +17,6 @@ export default async function handler(req: any, res: any) {
         displayName,
         skills: skills || '',
         timezone: timezone || '',
-        spaceId: spaceId || 'local-dev',
       });
 
       res.json({ key, txHash });
