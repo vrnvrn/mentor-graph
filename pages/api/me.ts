@@ -1,4 +1,4 @@
-import { getProfileByWallet, createUserProfile } from "../../src/arkiv/profiles"
+import { getProfileByWallet, createUserProfile, updateUserProfile } from "../../src/arkiv/profiles"
 import { listAsksForWallet, createAsk } from "../../src/arkiv/asks"
 import { listOffersForWallet, createOffer } from "../../src/arkiv/offers"
 import { CURRENT_WALLET, ARKIV_PRIVATE_KEY } from "../../src/config"
@@ -27,6 +27,19 @@ export default async function handler(req: any, res: any) {
           return res.status(400).json({ ok: false, error: 'displayName is required' });
         }
         await createUserProfile({
+          wallet: CURRENT_WALLET,
+          displayName,
+          skills: skills || '',
+          timezone: timezone || '',
+          privateKey: ARKIV_PRIVATE_KEY,
+        });
+        res.json({ ok: true });
+      } else if (action === 'updateProfile') {
+        const { displayName, skills, timezone } = req.body;
+        if (!displayName) {
+          return res.status(400).json({ ok: false, error: 'displayName is required' });
+        }
+        await updateUserProfile({
           wallet: CURRENT_WALLET,
           displayName,
           skills: skills || '',

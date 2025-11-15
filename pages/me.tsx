@@ -81,6 +81,7 @@ export default function Me() {
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [, setNow] = useState(Date.now());
   const [txHashMap, setTxHashMap] = useState<Record<string, string>>({});
+  const [editingProfile, setEditingProfile] = useState(false);
 
   const fetchMe = async () => {
     try {
@@ -149,6 +150,47 @@ export default function Me() {
     } catch (err) {
       console.error('Error creating profile:', err);
       setError('Network error creating profile');
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting('profile');
+    setError(null);
+    const formData = new FormData(e.target as HTMLFormElement);
+    const displayName = formData.get('displayName') as string;
+    const skills = formData.get('skills') as string;
+    const timezone = formData.get('timezone') as string;
+
+    const payload = {
+      action: 'updateProfile',
+      displayName,
+      skills,
+      timezone,
+    };
+    console.log('Updating profile:', payload);
+
+    try {
+      const res = await fetch('/api/me', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        console.log('Profile updated:', result);
+        setEditingProfile(false);
+        fetchMe();
+      } else {
+        const errorData = await res.json();
+        console.error('Error updating profile:', res.status, errorData);
+        setError(`Failed to update profile: ${errorData.error || res.statusText}`);
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setError('Network error updating profile');
     } finally {
       setSubmitting(null);
     }
@@ -286,12 +328,112 @@ export default function Me() {
 
         {data.profile ? (
           <div>
-            <div><strong>Display Name:</strong> {data.profile.displayName}</div>
-            <div><strong>Skills:</strong> {data.profile.skills}</div>
-            <div><strong>Timezone:</strong> {data.profile.timezone}</div>
-            <div><strong>Space ID:</strong> {data.profile.spaceId}</div>
-            {data.profile.createdAt && (
-              <div><strong>Created:</strong> {data.profile.createdAt}</div>
+            {!editingProfile ? (
+              <>
+                <div style={{ marginBottom: '10px' }}>
+                  <strong>Display Name:</strong> {data.profile.displayName}
+                </div>
+                <div style={{ marginBottom: '10px' }}>
+                  <strong>Skills:</strong> {data.profile.skills}
+                </div>
+                <div style={{ marginBottom: '10px' }}>
+                  <strong>Timezone:</strong> {data.profile.timezone}
+                </div>
+                <div style={{ marginBottom: '10px' }}>
+                  <strong>Space ID:</strong> {data.profile.spaceId}
+                </div>
+                {data.profile.createdAt && (
+                  <div style={{ marginBottom: '10px' }}>
+                    <strong>Created:</strong> {data.profile.createdAt}
+                  </div>
+                )}
+                <button
+                  onClick={() => setEditingProfile(true)}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    backgroundColor: '#666',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    marginTop: '10px',
+                  }}
+                >
+                  Edit Profile
+                </button>
+              </>
+            ) : (
+              <form onSubmit={handleUpdateProfile}>
+                <div style={{ marginBottom: '10px' }}>
+                  <label>
+                    Display Name:
+                    <input
+                      type="text"
+                      name="displayName"
+                      defaultValue={data.profile.displayName}
+                      required
+                      style={{ marginLeft: '10px' }}
+                    />
+                  </label>
+                </div>
+                <div style={{ marginBottom: '10px' }}>
+                  <label>
+                    Skills:
+                    <input
+                      type="text"
+                      name="skills"
+                      defaultValue={data.profile.skills}
+                      style={{ marginLeft: '10px' }}
+                    />
+                  </label>
+                </div>
+                <div style={{ marginBottom: '10px' }}>
+                  <label>
+                    Timezone:
+                    <input
+                      type="text"
+                      name="timezone"
+                      defaultValue={data.profile.timezone}
+                      style={{ marginLeft: '10px' }}
+                    />
+                  </label>
+                </div>
+                <div style={{ marginTop: '10px' }}>
+                  <button
+                    type="submit"
+                    disabled={submitting === 'profile'}
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '14px',
+                      backgroundColor: submitting === 'profile' ? '#ccc' : '#0066cc',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: submitting === 'profile' ? 'not-allowed' : 'pointer',
+                      marginRight: '10px',
+                    }}
+                  >
+                    {submitting === 'profile' ? 'Updating...' : 'Save Changes'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingProfile(false)}
+                    disabled={submitting === 'profile'}
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '14px',
+                      backgroundColor: '#999',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: submitting === 'profile' ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         ) : (

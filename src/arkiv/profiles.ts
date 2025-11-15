@@ -140,6 +140,38 @@ export async function listUserProfilesForWallet(wallet: string): Promise<UserPro
 
 export async function getProfileByWallet(wallet: string): Promise<UserProfile | null> {
   const profiles = await listUserProfilesForWallet(wallet);
-  return profiles.length > 0 ? profiles[0] : null;
+  if (profiles.length === 0) return null;
+  
+  // Return the most recent profile (sorted by createdAt descending)
+  profiles.sort((a, b) => {
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bTime - aTime;
+  });
+  
+  return profiles[0];
+}
+
+export async function updateUserProfile({
+  wallet,
+  displayName,
+  skills = '',
+  timezone = '',
+  privateKey,
+}: {
+  wallet: string;
+  displayName: string;
+  skills?: string;
+  timezone?: string;
+  privateKey: `0x${string}`;
+}): Promise<{ key: string; txHash: string }> {
+  // Since Arkiv entities are immutable, we create a new profile entity
+  return createUserProfile({
+    wallet,
+    displayName,
+    skills,
+    timezone,
+    privateKey,
+  });
 }
 
