@@ -24,3 +24,18 @@ Implemented:
   - lets the user create new asks (help requests)
   - lets the user create new offers (availability to help)
   - lists existing asks/offers pulled directly from Arkiv
+
+## Phase 3: Network Queries
+
+Implemented:
+- Arkiv helpers for **global** asks and offers:
+  - `listAsks({ skill?, spaceId? })`
+  - `listOffers({ skill?, spaceId? })`
+- `/api/network` endpoint that:
+  - queries Arkiv for all open asks and active offers
+  - accepts optional filters (`skill`, `spaceId`)
+  - returns `{ asks, offers }` for use in UI
+- `/network` page that:
+  - shows a global view of open asks and active offers across wallets
+  - includes a "Filter by skill" input, wired to `/api/network?skill=...`
+  - displays wallet, skill, message, status, and spaceId 
