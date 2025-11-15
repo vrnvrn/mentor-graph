@@ -5,3 +5,7 @@ node_modules/
 .DS_Store
 .next/
 SPEC_COMPLIANCE_REPORT.md
+ARKIV_RATE_LIMIT_QUESTION.md
+ARKIV_OPERATIONS.md
+DUMMY_DATA.md
+seedDummyData.ts
