@@ -158,12 +158,29 @@ function ArkivHelperText({ darkMode }: { darkMode: boolean }) {
       lineHeight: '1.6',
     }}>
       <span style={{ fontSize: '18px', marginTop: '2px', flexShrink: 0 }}>🌱</span>
-      <span><strong>Caution:</strong> Your data is immutable. This means it grows in the <a 
+      <span><strong>Caution:</strong> Your data is immutable and owned by you. This means it grows in the <a 
         href="https://explorer.mendoza.hoodi.arkiv.network" 
         target="_blank" 
         rel="noopener noreferrer"
         style={{ color: '#0066cc', textDecoration: 'underline', fontWeight: '500' }}
       >Arkiv garden</a> and cannot be deleted. Each edit plants a new seed and only displays a change on the front-end. Your previous growth remains forever in this infinite garden of knowledge. 🌺</span>
+    </div>
+  );
+}
+
+function ImmutableCaution({ darkMode }: { darkMode: boolean }) {
+  return (
+    <div style={{
+      marginTop: '4px',
+      fontSize: '11px',
+      color: darkMode ? '#90c695' : '#2d7a32',
+      fontStyle: 'italic',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+    }}>
+      <span style={{ fontSize: '12px' }}>🌱</span>
+      <span>caution: immutable and owned by you</span>
     </div>
   );
 }
@@ -816,7 +833,7 @@ export default function Me() {
               }}>
                 <p style={{ margin: 0, display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '17px', lineHeight: '1.7' }}>
                   <span style={{ fontSize: '24px', marginTop: '2px', lineHeight: '1' }}>🌱</span>
-                  <span><strong>Caution:</strong> Your data is immutable. This means it grows in the <a 
+                  <span><strong>Caution:</strong> Your data is immutable and owned by you. This means it grows in the <a 
                     href="https://explorer.mendoza.hoodi.arkiv.network" 
                     target="_blank" 
                     rel="noopener noreferrer"
@@ -885,7 +902,7 @@ export default function Me() {
       }}>
         <span style={{ fontSize: '28px', flexShrink: 0, marginTop: '2px', lineHeight: '1' }}>🌱🌿🌸</span>
         <div style={{ flex: 1, color: darkMode ? '#90c695' : '#2d7a32', fontSize: '15px', lineHeight: '1.7' }}>
-          <strong>Caution:</strong> Your data is immutable. This means it grows in the <a 
+          <strong>Caution:</strong> Your data is immutable and owned by you. This means it grows in the <a 
             href="https://explorer.mendoza.hoodi.arkiv.network" 
             target="_blank" 
             rel="noopener noreferrer"
@@ -1231,6 +1248,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ImmutableCaution darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1250,6 +1268,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ImmutableCaution darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1269,6 +1288,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ImmutableCaution darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1288,6 +1308,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ImmutableCaution darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1309,6 +1330,7 @@ export default function Me() {
                         resize: 'vertical',
                       }}
                     />
+                    <ImmutableCaution darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1328,6 +1350,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ImmutableCaution darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1347,6 +1370,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ImmutableCaution darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1409,6 +1433,9 @@ export default function Me() {
                         }}
                       />
                     </div>
+                    <div style={{ marginTop: '4px' }}>
+                      <ImmutableCaution darkMode={darkMode} />
+                    </div>
                   </div>
                 </div>
 
@@ -1433,6 +1460,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ImmutableCaution darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1475,6 +1503,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ImmutableCaution darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1494,6 +1523,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ImmutableCaution darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1513,6 +1543,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ImmutableCaution darkMode={darkMode} />
                   </div>
                 </div>
 
@@ -1584,6 +1615,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ImmutableCaution darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1602,6 +1634,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ImmutableCaution darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1620,6 +1653,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ImmutableCaution darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1638,6 +1672,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ImmutableCaution darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1656,6 +1691,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ImmutableCaution darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1674,6 +1710,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ImmutableCaution darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1732,6 +1769,9 @@ export default function Me() {
                     }}
                   />
                 </div>
+                <div style={{ marginTop: '4px' }}>
+                  <ImmutableCaution darkMode={darkMode} />
+                </div>
               </div>
             </div>
 
@@ -1755,6 +1795,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ImmutableCaution darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
