@@ -86,7 +86,7 @@ export default function Network() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'asks' | 'offers'>('all');
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [userWallet, setUserWallet] = useState<string>('');
-  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(true);
   const [, setNow] = useState(Date.now());
   const [nodePositions, setNodePositions] = useState<Record<string, { x: number; y: number }>>({});
   const [draggingNode, setDraggingNode] = useState<string | null>(null);
