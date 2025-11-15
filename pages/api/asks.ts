@@ -1,23 +1,31 @@
 import { createAsk, listAsksForWallet } from "../../src/arkiv/asks"
-import { CURRENT_WALLET, ARKIV_PRIVATE_KEY } from "../../src/config"
+import { CURRENT_WALLET, getPrivateKey } from "../../src/config"
 
 export default async function handler(req: any, res: any) {
   try {
     if (req.method === 'GET') {
-      const asks = await listAsksForWallet(CURRENT_WALLET);
+      const wallet = CURRENT_WALLET || '';
+      if (!wallet) {
+        return res.status(400).json({ error: 'No wallet configured' });
+      }
+      const asks = await listAsksForWallet(wallet);
       res.json(asks);
     } else if (req.method === 'POST') {
-      const { skill, message } = req.body;
+      const { skill, message, wallet: requestWallet } = req.body;
+      const wallet = requestWallet || CURRENT_WALLET || '';
       
+      if (!wallet) {
+        return res.status(400).json({ error: 'No wallet address provided' });
+      }
       if (!skill || !message) {
         return res.status(400).json({ error: 'skill and message are required' });
       }
 
       const { key, txHash } = await createAsk({
-        wallet: CURRENT_WALLET,
+        wallet,
         skill,
         message,
-        privateKey: ARKIV_PRIVATE_KEY,
+        privateKey: getPrivateKey(),
       });
 
       res.json({ key, txHash });

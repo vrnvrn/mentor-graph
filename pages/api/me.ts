@@ -3,13 +3,16 @@ import { listAsksForWallet, createAsk } from "../../src/arkiv/asks"
 import { listOffersForWallet, createOffer } from "../../src/arkiv/offers"
 import { listSessionsForWallet } from "../../src/arkiv/sessions"
 import { listFeedbackForWallet } from "../../src/arkiv/feedback"
-import { CURRENT_WALLET, ARKIV_PRIVATE_KEY } from "../../src/config"
+import { CURRENT_WALLET, getPrivateKey } from "../../src/config"
 
 export default async function handler(req: any, res: any) {
   try {
     if (req.method === 'GET') {
       // Get wallet address from query param, fallback to CURRENT_WALLET for backward compatibility
-      const wallet = (req.query.wallet as string) || CURRENT_WALLET;
+      const wallet = (req.query.wallet as string) || CURRENT_WALLET || '';
+      if (!wallet) {
+        return res.status(400).json({ ok: false, error: 'No wallet address provided' });
+      }
       
       const [profile, asks, offers, sessions, feedback] = await Promise.all([
         getProfileByWallet(wallet),
@@ -81,7 +84,10 @@ export default async function handler(req: any, res: any) {
     } else if (req.method === 'POST') {
       const { action, wallet: requestWallet } = req.body;
       // Use wallet from request body, fallback to CURRENT_WALLET for backward compatibility
-      const wallet = requestWallet || CURRENT_WALLET;
+      const wallet = requestWallet || CURRENT_WALLET || '';
+      if (!wallet) {
+        return res.status(400).json({ ok: false, error: 'No wallet address provided' });
+      }
 
       if (action === 'createProfile') {
         const { 
@@ -121,7 +127,7 @@ export default async function handler(req: any, res: any) {
           domainsOfInterest: domainsOfInterest || undefined,
           mentorRoles: mentorRoles || undefined,
           learnerRoles: learnerRoles || undefined,
-          privateKey: ARKIV_PRIVATE_KEY,
+          privateKey: getPrivateKey(),
         });
         res.json({ ok: true });
       } else if (action === 'updateProfile') {
@@ -162,7 +168,7 @@ export default async function handler(req: any, res: any) {
           domainsOfInterest: domainsOfInterest || undefined,
           mentorRoles: mentorRoles || undefined,
           learnerRoles: learnerRoles || undefined,
-          privateKey: ARKIV_PRIVATE_KEY,
+          privateKey: getPrivateKey(),
         });
         res.json({ ok: true });
       } else if (action === 'createAsk') {
@@ -174,7 +180,7 @@ export default async function handler(req: any, res: any) {
               wallet,
           skill,
           message,
-          privateKey: ARKIV_PRIVATE_KEY,
+          privateKey: getPrivateKey(),
           expiresIn: expiresIn ? parseInt(expiresIn, 10) : undefined,
         });
         res.json({ ok: true, key, txHash });
@@ -188,7 +194,7 @@ export default async function handler(req: any, res: any) {
           skill,
           message,
           availabilityWindow,
-          privateKey: ARKIV_PRIVATE_KEY,
+          privateKey: getPrivateKey(),
           expiresIn: expiresIn ? parseInt(expiresIn, 10) : undefined,
         });
         res.json({ ok: true, key, txHash });
