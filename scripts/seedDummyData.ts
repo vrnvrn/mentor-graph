@@ -56,7 +56,7 @@ async function seedDummyData() {
     ];
 
     for (const ask of asks) {
-      await delay(2000); // Wait 2 seconds between asks to avoid rate limit
+      await delay(5000); // Wait 5 seconds between asks to avoid rate limit
       const result = await createAsk({
         wallet: CURRENT_WALLET,
         skill: ask.skill,
@@ -77,7 +77,7 @@ async function seedDummyData() {
     ];
 
     for (const offer of offers) {
-      await delay(2000); // Wait 2 seconds between offers
+      await delay(5000); // Wait 5 seconds between offers
       const result = await createOffer({
         wallet: CURRENT_WALLET,
         skill: offer.skill,
@@ -125,7 +125,7 @@ async function seedDummyData() {
 
     const sessionKeys: string[] = [];
     for (const session of sessions) {
-      await delay(2000); // Wait 2 seconds between sessions
+      await delay(5000); // Wait 5 seconds between sessions
       const result = await createSession(session);
       sessionKeys.push(result.key);
       console.log(`✅ Session created: ${result.key}`);
@@ -173,7 +173,7 @@ async function seedDummyData() {
     ];
 
     for (const feedback of feedbacks) {
-      await delay(2000); // Wait 2 seconds between feedback
+      await delay(5000); // Wait 5 seconds between feedback
       const result = await createFeedback(feedback);
       console.log(`✅ Feedback created: ${result.key}`);
     }
@@ -208,7 +208,7 @@ async function seedDummyData() {
     ];
 
     for (const edge of trustEdges) {
-      await delay(2000); // Wait 2 seconds between trust edges
+      await delay(5000); // Wait 5 seconds between trust edges
       const result = await createTrustEdge(edge);
       console.log(`✅ Trust edge created: ${result.key}`);
     }
