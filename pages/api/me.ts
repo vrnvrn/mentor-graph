@@ -1,15 +1,19 @@
 import { getProfileByWallet, createUserProfile, updateUserProfile } from "../../src/arkiv/profiles"
 import { listAsksForWallet, createAsk } from "../../src/arkiv/asks"
 import { listOffersForWallet, createOffer } from "../../src/arkiv/offers"
+import { listSessionsForWallet } from "../../src/arkiv/sessions"
+import { listFeedbackForWallet } from "../../src/arkiv/feedback"
 import { CURRENT_WALLET, ARKIV_PRIVATE_KEY } from "../../src/config"
 
 export default async function handler(req: any, res: any) {
   try {
     if (req.method === 'GET') {
-      const [profile, asks, offers] = await Promise.all([
+      const [profile, asks, offers, sessions, feedback] = await Promise.all([
         getProfileByWallet(CURRENT_WALLET),
         listAsksForWallet(CURRENT_WALLET),
         listOffersForWallet(CURRENT_WALLET),
+        listSessionsForWallet(CURRENT_WALLET),
+        listFeedbackForWallet(CURRENT_WALLET),
       ]);
 
       res.json({
@@ -17,6 +21,8 @@ export default async function handler(req: any, res: any) {
         profile,
         asks,
         offers,
+        sessions,
+        feedback,
       });
     } else if (req.method === 'POST') {
       const { action } = req.body;
@@ -27,6 +33,7 @@ export default async function handler(req: any, res: any) {
           username,
           profileImage,
           bio,
+          bioShort,
           bioLong,
           skills, 
           skillsArray,
@@ -47,6 +54,7 @@ export default async function handler(req: any, res: any) {
           username,
           profileImage,
           bio,
+          bioShort,
           bioLong,
           skills: skills || '',
           skillsArray: skillsArray || (skills ? skills.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined),
@@ -66,6 +74,7 @@ export default async function handler(req: any, res: any) {
           username,
           profileImage,
           bio,
+          bioShort,
           bioLong,
           skills, 
           skillsArray,
@@ -86,6 +95,7 @@ export default async function handler(req: any, res: any) {
           username,
           profileImage,
           bio,
+          bioShort,
           bioLong,
           skills: skills || '',
           skillsArray: skillsArray || (skills ? skills.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined),
