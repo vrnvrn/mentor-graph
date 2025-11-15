@@ -169,7 +169,7 @@ export default function Home() {
           lineHeight: '1.5',
           transition: 'color 0.3s ease',
         }}>
-          A real-time mentorship network where your data lives on Arkiv and belongs to you.
+          A real-time mentorship network where your data grows in the Arkiv garden 🌱 and belongs to you.
         </h2>
 
         <p style={{

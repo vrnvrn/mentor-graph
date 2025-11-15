@@ -791,7 +791,7 @@ export default function Network() {
             letterSpacing: '-0.5px',
             transition: 'color 0.3s ease'
           }}>
-            Network Analytics
+            Network Analytics 🌿
           </h1>
           <p style={{ 
             margin: '8px 0 0 0',
@@ -799,7 +799,7 @@ export default function Network() {
             color: theme.textSecondary,
             transition: 'color 0.3s ease'
           }}>
-            Arkiv-powered mentorship network visualization
+            Arkiv-powered mentorship network visualization • Growing in the infinite garden 🌱
           </p>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
