@@ -394,65 +394,50 @@ export default function Network() {
     displayedNodes.forEach((node) => {
       const nodePos = getNodePosition(node.id, node.x, node.y);
       
-      // Skill-based connections (same skill)
+      // Skill-based connections (same skill) - always show
       displayedNodes.forEach((target) => {
         if (target.id === node.id) return;
         if (node.skill.toLowerCase() === target.skill.toLowerCase()) {
           const targetPos = getNodePosition(target.id, target.x, target.y);
-          const distance = Math.sqrt(
-            Math.pow(nodePos.x - targetPos.x, 2) + Math.pow(nodePos.y - targetPos.y, 2)
-          );
-          if (distance < 400) {
-            connections.push({
-              from: node.id,
-              to: target.id,
-              type: 'skill',
-              fromPos: nodePos,
-              toPos: targetPos,
-            });
-          }
+          connections.push({
+            from: node.id,
+            to: target.id,
+            type: 'skill',
+            fromPos: nodePos,
+            toPos: targetPos,
+          });
         }
       });
 
-      // Wallet-based connections (same wallet - entities from same contributor)
+      // Wallet-based connections (same wallet - entities from same contributor) - always show
       displayedNodes.forEach((target) => {
         if (target.id === node.id) return;
         if (node.wallet === target.wallet && node.wallet !== userWallet) {
           const targetPos = getNodePosition(target.id, target.x, target.y);
-          const distance = Math.sqrt(
-            Math.pow(nodePos.x - targetPos.x, 2) + Math.pow(nodePos.y - targetPos.y, 2)
-          );
-          if (distance < 500) {
-            connections.push({
-              from: node.id,
-              to: target.id,
-              type: 'wallet',
-              fromPos: nodePos,
-              toPos: targetPos,
-            });
-          }
+          connections.push({
+            from: node.id,
+            to: target.id,
+            type: 'wallet',
+            fromPos: nodePos,
+            toPos: targetPos,
+          });
         }
       });
 
-      // Match connections (ask + offer with same skill - potential mentorship matches)
+      // Match connections (ask + offer with same skill - potential mentorship matches) - always show
       if (node.type === 'ask') {
         displayedNodes.forEach((target) => {
           if (target.type === 'offer' && 
               node.skill.toLowerCase() === target.skill.toLowerCase() &&
               node.wallet !== target.wallet) {
             const targetPos = getNodePosition(target.id, target.x, target.y);
-            const distance = Math.sqrt(
-              Math.pow(nodePos.x - targetPos.x, 2) + Math.pow(nodePos.y - targetPos.y, 2)
-            );
-            if (distance < 600) {
-              connections.push({
-                from: node.id,
-                to: target.id,
-                type: 'match',
-                fromPos: nodePos,
-                toPos: targetPos,
-              });
-            }
+            connections.push({
+              from: node.id,
+              to: target.id,
+              type: 'match',
+              fromPos: nodePos,
+              toPos: targetPos,
+            });
           }
         });
       }
