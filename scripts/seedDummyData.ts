@@ -41,14 +41,22 @@ async function retryWithBackoff<T>(
 
 async function seedDummyData() {
   console.log('🌱 Seeding dummy data for MentorGraph...');
-  console.log(`Using wallet: ${CURRENT_WALLET}`);
+  
+  if (!CURRENT_WALLET || !ARKIV_PRIVATE_KEY) {
+    console.error('❌ ARKIV_PRIVATE_KEY is not available. Please set it in your .env file.');
+    process.exit(1);
+  }
+  
+  const wallet = CURRENT_WALLET; // TypeScript narrowing
+  const privateKey = ARKIV_PRIVATE_KEY; // TypeScript narrowing
+  console.log(`Using wallet: ${wallet}`);
 
   try {
     // 1. Create a comprehensive user profile
     console.log('\n📝 Creating user profile...');
     // No delay needed before first operation
     const profileResult = await retryWithBackoff(() => createUserProfile({
-      wallet: CURRENT_WALLET,
+      wallet,
       displayName: 'Alex Mentor',
       username: 'alex_mentor',
       profileImage: 'https://i.pravatar.cc/150?img=12',
@@ -68,7 +76,7 @@ async function seedDummyData() {
       domainsOfInterest: ['blockchain', 'cryptography', 'zk'],
       mentorRoles: ['technical mentor', 'code review', 'architecture'],
       learnerRoles: ['design patterns', 'scaling'],
-      privateKey: ARKIV_PRIVATE_KEY,
+      privateKey,
     }));
     console.log(`✅ Profile created: ${profileResult.key}`);
 
@@ -84,10 +92,10 @@ async function seedDummyData() {
     for (const ask of asks) {
       await delay(100); // 100ms delay = 10 req/s (well under 50 RPS limit)
       const result = await retryWithBackoff(() => createAsk({
-        wallet: CURRENT_WALLET,
+        wallet,
         skill: ask.skill,
         message: ask.message,
-        privateKey: ARKIV_PRIVATE_KEY,
+        privateKey,
         expiresIn: ask.expiresIn,
       }));
       console.log(`✅ Ask created: ${result.key} (${ask.skill})`);
@@ -105,11 +113,11 @@ async function seedDummyData() {
     for (const offer of offers) {
       await delay(100); // 100ms delay = 10 req/s (well under 50 RPS limit)
       const result = await retryWithBackoff(() => createOffer({
-        wallet: CURRENT_WALLET,
+        wallet,
         skill: offer.skill,
         message: offer.message,
         availabilityWindow: offer.availabilityWindow,
-        privateKey: ARKIV_PRIVATE_KEY,
+        privateKey,
         expiresIn: offer.expiresIn,
       }));
       console.log(`✅ Offer created: ${result.key} (${offer.skill})`);
@@ -127,7 +135,7 @@ async function seedDummyData() {
         sessionDate: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
         duration: 60,
         notes: 'Great session on gas optimization techniques',
-        privateKey: ARKIV_PRIVATE_KEY,
+        privateKey,
       },
       {
         mentorWallet: CURRENT_WALLET,
@@ -136,7 +144,7 @@ async function seedDummyData() {
         sessionDate: new Date(Date.now() - 86400000).toISOString(), // Yesterday
         duration: 90,
         notes: 'Code review session on async Rust patterns',
-        privateKey: ARKIV_PRIVATE_KEY,
+        privateKey,
       },
       {
         mentorWallet: otherWallets[2],
@@ -145,7 +153,7 @@ async function seedDummyData() {
         sessionDate: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
         duration: 45,
         notes: 'UI/UX design patterns discussion',
-        privateKey: ARKIV_PRIVATE_KEY,
+        privateKey,
       },
     ];
 
@@ -170,7 +178,7 @@ async function seedDummyData() {
         text: 'Alex was incredibly helpful with gas optimization. Explained everything clearly!',
         skills: ['solidity', 'optimization'],
         wouldRecommend: true,
-        privateKey: ARKIV_PRIVATE_KEY,
+        privateKey,
       },
       {
         sessionKey: sessionKeys[1],
@@ -182,7 +190,7 @@ async function seedDummyData() {
         text: 'Good code review session, learned a lot about async patterns',
         skills: ['rust', 'async'],
         wouldRecommend: true,
-        privateKey: ARKIV_PRIVATE_KEY,
+        privateKey,
       },
       {
         sessionKey: sessionKeys[2],
@@ -194,7 +202,7 @@ async function seedDummyData() {
         text: 'Excellent design mentorship, very insightful!',
         skills: ['design', 'ui'],
         wouldRecommend: true,
-        privateKey: ARKIV_PRIVATE_KEY,
+        privateKey,
       },
     ];
 
@@ -213,7 +221,7 @@ async function seedDummyData() {
         strength: 85,
         context: 'Great mentorship session on Solidity',
         sessionKey: sessionKeys[0],
-        privateKey: ARKIV_PRIVATE_KEY,
+        privateKey,
       },
       {
         fromWallet: otherWallets[1],
@@ -221,7 +229,7 @@ async function seedDummyData() {
         strength: 75,
         context: 'Helpful Rust code review',
         sessionKey: sessionKeys[1],
-        privateKey: ARKIV_PRIVATE_KEY,
+        privateKey,
       },
       {
         fromWallet: CURRENT_WALLET,
@@ -229,7 +237,7 @@ async function seedDummyData() {
         strength: 90,
         context: 'Excellent design mentorship',
         sessionKey: sessionKeys[2],
-        privateKey: ARKIV_PRIVATE_KEY,
+        privateKey,
       },
     ];
 

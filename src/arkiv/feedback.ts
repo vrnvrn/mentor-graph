@@ -133,12 +133,12 @@ export async function listFeedback(params?: {
   const txHashMap: Record<string, string> = {};
   txHashResult.entities.forEach((entity: any) => {
     const attrs = entity.attributes || {};
-    const getAttr = (key: string) => {
+    const getAttr = (key: string): string => {
       if (Array.isArray(attrs)) {
         const attr = attrs.find((a: any) => a.key === key);
-        return attr?.value || '';
+        return String(attr?.value || '');
       }
-      return attrs[key] || '';
+      return String(attrs[key] || '');
     };
     const feedbackKey = getAttr('feedbackKey');
     if (feedbackKey) {
@@ -174,19 +174,19 @@ export async function listFeedback(params?: {
     }
 
     const attrs = entity.attributes || {};
-    const getAttr = (key: string) => {
+    const getAttr = (key: string): string => {
       if (Array.isArray(attrs)) {
         const attr = attrs.find((a: any) => a.key === key);
-        return attr?.value || '';
+        return String(attr?.value || '');
       }
-      return attrs[key] || '';
+      return String(attrs[key] || '');
     };
 
     return {
       key: entity.key,
-      sessionKey: getAttr('sessionKey') || '',
-      fromWallet: getAttr('fromWallet') || '',
-      toWallet: getAttr('toWallet') || '',
+      sessionKey: getAttr('sessionKey'),
+      fromWallet: getAttr('fromWallet'),
+      toWallet: getAttr('toWallet'),
       role: (getAttr('role') || 'learner') as Feedback['role'],
       spaceId: getAttr('spaceId') || 'local-dev',
       createdAt: getAttr('createdAt') || '',
@@ -249,12 +249,12 @@ export async function getFeedbackByKey(key: string): Promise<Feedback | null> {
   }
 
   const attrs = entity.attributes || {};
-  const getAttr = (key: string) => {
+  const getAttr = (key: string): string => {
     if (Array.isArray(attrs)) {
       const attr = attrs.find((a: any) => a.key === key);
-      return attr?.value || '';
+      return String(attr?.value || '');
     }
-    return attrs[key] || '';
+    return String(attrs[key] || '');
   };
 
   // Get txHash
@@ -284,9 +284,9 @@ export async function getFeedbackByKey(key: string): Promise<Feedback | null> {
 
   return {
     key: entity.key,
-    sessionKey: getAttr('sessionKey') || '',
-    fromWallet: getAttr('fromWallet') || '',
-    toWallet: getAttr('toWallet') || '',
+    sessionKey: getAttr('sessionKey'),
+    fromWallet: getAttr('fromWallet'),
+    toWallet: getAttr('toWallet'),
     role: (getAttr('role') || 'learner') as Feedback['role'],
     spaceId: getAttr('spaceId') || 'local-dev',
     createdAt: getAttr('createdAt') || '',

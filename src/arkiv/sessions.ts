@@ -125,12 +125,12 @@ export async function listSessions(params?: {
   const txHashMap: Record<string, string> = {};
   txHashResult.entities.forEach((entity: any) => {
     const attrs = entity.attributes || {};
-    const getAttr = (key: string) => {
+    const getAttr = (key: string): string => {
       if (Array.isArray(attrs)) {
         const attr = attrs.find((a: any) => a.key === key);
-        return attr?.value || '';
+        return String(attr?.value || '');
       }
-      return attrs[key] || '';
+      return String(attrs[key] || '');
     };
     const sessionKey = getAttr('sessionKey');
     if (sessionKey) {
@@ -165,22 +165,22 @@ export async function listSessions(params?: {
       console.error('Error decoding payload:', e);
     }
 
-    const attrs = entity.attributes || {};
-    const getAttr = (key: string) => {
-      if (Array.isArray(attrs)) {
-        const attr = attrs.find((a: any) => a.key === key);
-        return attr?.value || '';
-      }
-      return attrs[key] || '';
-    };
+  const attrs = entity.attributes || {};
+  const getAttr = (key: string): string => {
+    if (Array.isArray(attrs)) {
+      const attr = attrs.find((a: any) => a.key === key);
+      return String(attr?.value || '');
+    }
+    return String(attrs[key] || '');
+  };
 
-    return {
-      key: entity.key,
-      mentorWallet: getAttr('mentorWallet') || '',
-      learnerWallet: getAttr('learnerWallet') || '',
-      skill: getAttr('skill') || '',
-      spaceId: getAttr('spaceId') || 'local-dev',
-      createdAt: getAttr('createdAt') || '',
+  return {
+    key: entity.key,
+    mentorWallet: getAttr('mentorWallet'),
+    learnerWallet: getAttr('learnerWallet'),
+    skill: getAttr('skill'),
+    spaceId: getAttr('spaceId') || 'local-dev',
+    createdAt: getAttr('createdAt'),
       sessionDate: getAttr('sessionDate') || payload.sessionDate || '',
       status: (getAttr('status') || payload.status || 'scheduled') as Session['status'],
       duration: payload.duration || undefined,
@@ -236,12 +236,12 @@ export async function getSessionByKey(key: string): Promise<Session | null> {
   }
 
   const attrs = entity.attributes || {};
-  const getAttr = (key: string) => {
+  const getAttr = (key: string): string => {
     if (Array.isArray(attrs)) {
       const attr = attrs.find((a: any) => a.key === key);
-      return attr?.value || '';
+      return String(attr?.value || '');
     }
-    return attrs[key] || '';
+    return String(attrs[key] || '');
   };
 
   // Get txHash
@@ -271,11 +271,11 @@ export async function getSessionByKey(key: string): Promise<Session | null> {
 
   return {
     key: entity.key,
-    mentorWallet: getAttr('mentorWallet') || '',
-    learnerWallet: getAttr('learnerWallet') || '',
-    skill: getAttr('skill') || '',
+    mentorWallet: getAttr('mentorWallet'),
+    learnerWallet: getAttr('learnerWallet'),
+    skill: getAttr('skill'),
     spaceId: getAttr('spaceId') || 'local-dev',
-    createdAt: getAttr('createdAt') || '',
+    createdAt: getAttr('createdAt'),
     sessionDate: getAttr('sessionDate') || payload.sessionDate || '',
     status: (getAttr('status') || payload.status || 'scheduled') as Session['status'],
     duration: payload.duration || undefined,

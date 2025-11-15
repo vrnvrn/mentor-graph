@@ -90,12 +90,12 @@ export async function listAsks(params?: { skill?: string; spaceId?: string }): P
   const txHashMap: Record<string, string> = {};
   txHashResult.entities.forEach((entity: any) => {
     const attrs = entity.attributes || {};
-    const getAttr = (key: string) => {
+    const getAttr = (key: string): string => {
       if (Array.isArray(attrs)) {
         const attr = attrs.find((a: any) => a.key === key);
-        return attr?.value || '';
+        return String(attr?.value || '');
       }
-      return attrs[key] || '';
+      return String(attrs[key] || '');
     };
     const askKey = getAttr('askKey');
     if (askKey) {
@@ -134,12 +134,12 @@ export async function listAsks(params?: { skill?: string; spaceId?: string }): P
     }
 
     const attrs = entity.attributes || {};
-    const getAttr = (key: string) => {
+    const getAttr = (key: string): string => {
       if (Array.isArray(attrs)) {
         const attr = attrs.find((a: any) => a.key === key);
-        return attr?.value || '';
+        return String(attr?.value || '');
       }
-      return attrs[key] || '';
+      return String(attrs[key] || '');
     };
     
     return {
@@ -186,12 +186,12 @@ export async function listAsksForWallet(wallet: string): Promise<Ask[]> {
   const txHashMap: Record<string, string> = {};
   txHashResult.entities.forEach((entity: any) => {
     const attrs = entity.attributes || {};
-    const getAttr = (key: string) => {
+    const getAttr = (key: string): string => {
       if (Array.isArray(attrs)) {
         const attr = attrs.find((a: any) => a.key === key);
-        return attr?.value || '';
+        return String(attr?.value || '');
       }
-      return attrs[key] || '';
+      return String(attrs[key] || '');
     };
     const askKey = getAttr('askKey');
     if (askKey) {
@@ -230,12 +230,12 @@ export async function listAsksForWallet(wallet: string): Promise<Ask[]> {
     }
 
     const attrs = entity.attributes || {};
-    const getAttr = (key: string) => {
+    const getAttr = (key: string): string => {
       if (Array.isArray(attrs)) {
         const attr = attrs.find((a: any) => a.key === key);
-        return attr?.value || '';
+        return String(attr?.value || '');
       }
-      return attrs[key] || '';
+      return String(attrs[key] || '');
     };
     
     return {

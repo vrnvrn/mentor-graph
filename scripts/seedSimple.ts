@@ -8,7 +8,15 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function seedSimple() {
   console.log('🌱 Seeding simple test data (asks & offers only)...');
-  console.log(`Using wallet: ${CURRENT_WALLET}\n`);
+  
+  if (!CURRENT_WALLET || !ARKIV_PRIVATE_KEY) {
+    console.error('❌ ARKIV_PRIVATE_KEY is not available. Please set it in your .env file.');
+    process.exit(1);
+  }
+  
+  const wallet = CURRENT_WALLET; // TypeScript narrowing
+  const privateKey = ARKIV_PRIVATE_KEY; // TypeScript narrowing
+  console.log(`Using wallet: ${wallet}\n`);
 
   try {
     // Create some asks
@@ -23,10 +31,10 @@ async function seedSimple() {
       await delay(200); // 200ms delay = 5 req/s (well under 50 RPS)
       try {
         const result = await createAsk({
-          wallet: CURRENT_WALLET,
+          wallet,
           skill: ask.skill,
           message: ask.message,
-          privateKey: ARKIV_PRIVATE_KEY,
+          privateKey,
         });
         console.log(`✅ Ask: ${ask.skill}`);
       } catch (error: any) {
@@ -45,11 +53,11 @@ async function seedSimple() {
       await delay(200); // 200ms delay
       try {
         const result = await createOffer({
-          wallet: CURRENT_WALLET,
+          wallet,
           skill: offer.skill,
           message: offer.message,
           availabilityWindow: offer.availabilityWindow,
-          privateKey: ARKIV_PRIVATE_KEY,
+          privateKey,
         });
         console.log(`✅ Offer: ${offer.skill}`);
       } catch (error: any) {

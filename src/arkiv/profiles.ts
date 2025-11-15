@@ -201,12 +201,12 @@ export async function listUserProfiles(params?: {
     }
 
     const attrs = entity.attributes || {};
-    const getAttr = (key: string) => {
+    const getAttr = (key: string): string => {
       if (Array.isArray(attrs)) {
         const attr = attrs.find((a: any) => a.key === key);
-        return attr?.value || '';
+        return String(attr?.value || '');
       }
-      return attrs[key] || '';
+      return String(attrs[key] || '');
     };
 
     // Parse skills array from attributes or payload
@@ -294,12 +294,12 @@ export async function listUserProfilesForWallet(wallet: string): Promise<UserPro
     }
 
     const attrs = entity.attributes || {};
-    const getAttr = (key: string) => {
+    const getAttr = (key: string): string => {
       if (Array.isArray(attrs)) {
         const attr = attrs.find((a: any) => a.key === key);
-        return attr?.value || '';
+        return String(attr?.value || '');
       }
-      return attrs[key] || '';
+      return String(attrs[key] || '');
     };
 
     // Parse skills array from attributes or payload

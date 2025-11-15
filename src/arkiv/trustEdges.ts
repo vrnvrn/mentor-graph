@@ -113,12 +113,12 @@ export async function listTrustEdges(params?: {
   const txHashMap: Record<string, string> = {};
   txHashResult.entities.forEach((entity: any) => {
     const attrs = entity.attributes || {};
-    const getAttr = (key: string) => {
+    const getAttr = (key: string): string => {
       if (Array.isArray(attrs)) {
         const attr = attrs.find((a: any) => a.key === key);
-        return attr?.value || '';
+        return String(attr?.value || '');
       }
-      return attrs[key] || '';
+      return String(attrs[key] || '');
     };
     const trustEdgeKey = getAttr('trustEdgeKey');
     if (trustEdgeKey) {
@@ -154,23 +154,23 @@ export async function listTrustEdges(params?: {
         console.error('Error decoding payload:', e);
       }
 
-      const attrs = entity.attributes || {};
-      const getAttr = (key: string) => {
-        if (Array.isArray(attrs)) {
-          const attr = attrs.find((a: any) => a.key === key);
-          return attr?.value || '';
-        }
-        return attrs[key] || '';
-      };
+  const attrs = entity.attributes || {};
+  const getAttr = (key: string): string => {
+    if (Array.isArray(attrs)) {
+      const attr = attrs.find((a: any) => a.key === key);
+      return String(attr?.value || '');
+    }
+    return String(attrs[key] || '');
+  };
 
-      const strength = payload.strength !== undefined 
-        ? payload.strength 
-        : (getAttr('strength') ? parseInt(getAttr('strength'), 10) : 0);
+  const strength = payload.strength !== undefined 
+    ? payload.strength 
+    : (getAttr('strength') ? parseInt(getAttr('strength'), 10) : 0);
 
-      return {
-        key: entity.key,
-        fromWallet: getAttr('fromWallet') || '',
-        toWallet: getAttr('toWallet') || '',
+  return {
+    key: entity.key,
+    fromWallet: getAttr('fromWallet'),
+    toWallet: getAttr('toWallet'),
         strength,
         spaceId: getAttr('spaceId') || 'local-dev',
         createdAt: getAttr('createdAt') || '',
@@ -233,12 +233,12 @@ export async function getTrustEdgeByKey(key: string): Promise<TrustEdge | null> 
   }
 
   const attrs = entity.attributes || {};
-  const getAttr = (key: string) => {
+  const getAttr = (key: string): string => {
     if (Array.isArray(attrs)) {
       const attr = attrs.find((a: any) => a.key === key);
-      return attr?.value || '';
+      return String(attr?.value || '');
     }
-    return attrs[key] || '';
+    return String(attrs[key] || '');
   };
 
   // Get txHash
@@ -266,9 +266,10 @@ export async function getTrustEdgeByKey(key: string): Promise<TrustEdge | null> 
     }
   }
 
+  const strengthStr = getAttr('strength');
   const strength = payload.strength !== undefined 
     ? payload.strength 
-    : (getAttr('strength') ? parseInt(getAttr('strength'), 10) : 0);
+    : (strengthStr ? parseInt(strengthStr, 10) : 0);
 
   return {
     key: entity.key,
