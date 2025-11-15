@@ -148,21 +148,22 @@ function shortenWallet(wallet: string): string {
 function ArkivHelperText({ darkMode }: { darkMode: boolean }) {
   return (
     <div style={{
-      marginTop: '6px',
-      fontSize: '12px',
-      color: darkMode ? '#b0b0b0' : '#6c757d',
+      marginTop: '8px',
+      fontSize: '13px',
+      color: darkMode ? '#90c695' : '#2d7a32',
       fontStyle: 'italic',
       display: 'flex',
-      alignItems: 'center',
-      gap: '4px',
+      alignItems: 'flex-start',
+      gap: '8px',
+      lineHeight: '1.6',
     }}>
-      <span>⚠️</span>
-      <span>Immutable data. Stored permanently on <a 
+      <span style={{ fontSize: '18px', marginTop: '2px', flexShrink: 0 }}>🌱</span>
+      <span><strong>Caution:</strong> Your data is immutable. This means it grows in the <a 
         href="https://explorer.mendoza.hoodi.arkiv.network" 
         target="_blank" 
         rel="noopener noreferrer"
-        style={{ color: '#0066cc', textDecoration: 'underline' }}
-      >Arkiv</a>. Edits only change what is displayed.</span>
+        style={{ color: '#0066cc', textDecoration: 'underline', fontWeight: '500' }}
+      >Arkiv garden</a> and cannot be deleted. Each edit plants a new seed and only displays a change on the front-end. Your previous growth remains forever in this infinite garden of knowledge. 🌺</span>
     </div>
   );
 }
@@ -717,13 +718,13 @@ export default function Me() {
 
       {/* Arkiv Immutability Warning Modal */}
       {showArkivWarning && (
-        <div style={{
+        <div         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backgroundColor: darkMode ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.4)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -755,11 +756,15 @@ export default function Me() {
             }}>
               <h2 style={{
                 margin: 0,
-                fontSize: '24px',
-                fontWeight: '700',
-                color: theme.errorText,
+                fontSize: '28px',
+                fontWeight: '600',
+                color: darkMode ? '#90c695' : '#2d7a32',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
               }}>
-                ⚠️ Attention!
+                <span>🌱🌿🌸</span>
+                <span>Welcome to the Infinite Garden</span>
               </h2>
               <button
                 onClick={() => {
@@ -797,36 +802,32 @@ export default function Me() {
             <div style={{
               color: theme.text,
               fontSize: '16px',
-              lineHeight: '1.6',
+              lineHeight: '1.7',
               marginBottom: '24px',
             }}>
-              <p style={{ marginBottom: '16px' }}>
-                <strong>Everything entered on this site is stored on <a 
-                  href="https://explorer.mendoza.hoodi.arkiv.network" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ 
-                    color: '#0066cc',
-                    textDecoration: 'underline',
-                  }}
-                >Arkiv</a> and is <strong style={{ color: theme.errorText }}>immutable</strong>.</strong>
-              </p>
-              
-              <p style={{ marginBottom: '16px' }}>
-                When you edit your profile, it only changes on the front-end. Each edit creates a new entity on Arkiv. Your previous data remains permanently stored on the blockchain.
-              </p>
-              
-              <p style={{ 
-                marginBottom: 0,
-                padding: '12px',
-                backgroundColor: theme.errorBg,
-                borderRadius: '6px',
-                border: `1px solid ${theme.errorBorder}`,
-                color: theme.errorText,
-                fontWeight: '500',
+              <div style={{ 
+                marginBottom: '24px',
+                padding: '20px',
+                backgroundColor: darkMode ? '#1a2e1a' : '#f0f9f0',
+                borderRadius: '10px',
+                border: `2px solid ${darkMode ? '#2d4a2d' : '#90c695'}`,
+                color: darkMode ? '#90c695' : '#2d7a32',
+                boxShadow: darkMode ? 'inset 0 2px 4px rgba(0, 0, 0, 0.1)' : 'inset 0 2px 4px rgba(144, 198, 149, 0.1)',
               }}>
-                ⚠️ Please be careful with all information you share. Once stored on Arkiv, it cannot be deleted or modified.
-              </p>
+                <p style={{ margin: 0, display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '17px', lineHeight: '1.7' }}>
+                  <span style={{ fontSize: '24px', marginTop: '2px', lineHeight: '1' }}>🌱</span>
+                  <span><strong>Caution:</strong> Your data is immutable. This means it grows in the <a 
+                    href="https://explorer.mendoza.hoodi.arkiv.network" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ 
+                      color: '#0066cc',
+                      textDecoration: 'underline',
+                      fontWeight: '500',
+                    }}
+                  >Arkiv garden</a> and cannot be deleted. Each edit plants a new seed and only displays a change on the front-end. Your previous growth remains forever in this infinite garden of knowledge. 🌺</span>
+                </p>
+              </div>
             </div>
 
             <button
@@ -836,55 +837,66 @@ export default function Me() {
               }}
               style={{
                 width: '100%',
-                padding: '12px 24px',
-                fontSize: '16px',
+                padding: '16px 28px',
+                fontSize: '18px',
                 fontWeight: '600',
-                backgroundColor: '#0066cc',
+                backgroundColor: darkMode ? '#2d7a32' : '#4caf50',
                 color: 'white',
                 border: 'none',
-                borderRadius: '6px',
+                borderRadius: '10px',
                 cursor: 'pointer',
-                transition: 'all 0.2s ease',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                boxShadow: darkMode ? '0 4px 12px rgba(45, 122, 50, 0.4)' : '0 4px 12px rgba(76, 175, 80, 0.4)',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#0052a3';
+                e.currentTarget.style.backgroundColor = darkMode ? '#3d8a42' : '#5cbf60';
+                e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                e.currentTarget.style.boxShadow = darkMode ? '0 6px 16px rgba(45, 122, 50, 0.5)' : '0 6px 16px rgba(76, 175, 80, 0.5)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#0066cc';
+                e.currentTarget.style.backgroundColor = darkMode ? '#2d7a32' : '#4caf50';
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                e.currentTarget.style.boxShadow = darkMode ? '0 4px 12px rgba(45, 122, 50, 0.4)' : '0 4px 12px rgba(76, 175, 80, 0.4)';
               }}
             >
-              I Understand
+              <span style={{ fontSize: '22px' }}>🌱</span>
+              <span>I Understand</span>
+              <span style={{ fontSize: '22px' }}>🌸</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Persistent Arkiv Warning Banner */}
+      {/* Persistent Arkiv Garden Banner */}
       <div style={{
         marginBottom: '24px',
-        padding: '14px 18px',
-        backgroundColor: darkMode ? '#2a1f1f' : '#fff3cd',
-        border: `1px solid ${darkMode ? '#5a2f2f' : '#ffc107'}`,
-        borderRadius: '8px',
+        padding: '16px 20px',
+        backgroundColor: darkMode ? '#1a2e1a' : '#f0f9f0',
+        border: `1px solid ${darkMode ? '#2d4a2d' : '#90c695'}`,
+        borderRadius: '10px',
         display: 'flex',
         alignItems: 'flex-start',
         gap: '12px',
+        boxShadow: darkMode ? '0 2px 8px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(144, 198, 149, 0.15)',
       }}>
-        <span style={{ fontSize: '20px', flexShrink: 0 }}>⚠️</span>
-        <div style={{ flex: 1, color: darkMode ? '#ff6b6b' : '#856404', fontSize: '14px', lineHeight: '1.5' }}>
-          <strong>Data stored on Arkiv is immutable.</strong> All information you enter is permanently stored on the{' '}
-          <a 
+        <span style={{ fontSize: '28px', flexShrink: 0, marginTop: '2px', lineHeight: '1' }}>🌱🌿🌸</span>
+        <div style={{ flex: 1, color: darkMode ? '#90c695' : '#2d7a32', fontSize: '15px', lineHeight: '1.7' }}>
+          <strong>Caution:</strong> Your data is immutable. This means it grows in the <a 
             href="https://explorer.mendoza.hoodi.arkiv.network" 
             target="_blank" 
             rel="noopener noreferrer"
             style={{ 
               color: '#0066cc',
               textDecoration: 'underline',
+              fontWeight: '600',
             }}
           >
-            Arkiv blockchain
-          </a>
-          {' '}and cannot be deleted or modified. Editing creates new entities. Previous data remains on-chain.
+            Arkiv garden
+          </a> and cannot be deleted. Each edit plants a new seed and only displays a change on the front-end. Your previous growth remains forever in this infinite garden of knowledge. 🌺
         </div>
       </div>
 
@@ -1219,7 +1231,6 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
-                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1239,7 +1250,6 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
-                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1259,7 +1269,6 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
-                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1279,7 +1288,6 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
-                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1301,7 +1309,6 @@ export default function Me() {
                         resize: 'vertical',
                       }}
                     />
-                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1321,7 +1328,6 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
-                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1341,7 +1347,6 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
-                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1404,7 +1409,6 @@ export default function Me() {
                         }}
                       />
                     </div>
-                    <ArkivHelperText darkMode={darkMode} />
                   </div>
                 </div>
 
@@ -1429,7 +1433,6 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
-                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1453,7 +1456,6 @@ export default function Me() {
                       <option value="advanced">Advanced</option>
                       <option value="expert">Expert</option>
                     </select>
-                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1473,7 +1475,6 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
-                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1493,7 +1494,6 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
-                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1513,7 +1513,6 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
-                    <ArkivHelperText darkMode={darkMode} />
                   </div>
                 </div>
 
@@ -1585,7 +1584,6 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
-                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1604,7 +1602,6 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
-                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1623,7 +1620,6 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
-                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1642,7 +1638,6 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
-                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1661,7 +1656,6 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
-                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1680,7 +1674,6 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
-                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1739,7 +1732,6 @@ export default function Me() {
                     }}
                   />
                 </div>
-                <ArkivHelperText darkMode={darkMode} />
               </div>
             </div>
 
@@ -1763,7 +1755,6 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
-                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1786,7 +1777,6 @@ export default function Me() {
                   <option value="advanced">Advanced</option>
                   <option value="expert">Expert</option>
                 </select>
-                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1805,7 +1795,6 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
-                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1824,7 +1813,6 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
-                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1843,7 +1831,6 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
-                <ArkivHelperText darkMode={darkMode} />
               </div>
             </div>
 
@@ -2084,6 +2071,7 @@ export default function Me() {
         }}>
           My Asks ({data.asks.length})
         </h2>
+        <ArkivHelperText darkMode={darkMode} />
         <form onSubmit={handleCreateAsk} style={{ 
           marginBottom: '20px', 
           padding: '15px', 
@@ -2108,7 +2096,6 @@ export default function Me() {
                 color: theme.text,
               }} 
             />
-            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
             <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
@@ -2127,7 +2114,6 @@ export default function Me() {
                 color: theme.text,
               }} 
             />
-            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
             <label style={{ color: theme.text }}>
@@ -2282,6 +2268,7 @@ export default function Me() {
         }}>
           My Offers ({data.offers.length})
         </h2>
+        <ArkivHelperText darkMode={darkMode} />
         <form onSubmit={handleCreateOffer} style={{ 
           marginBottom: '20px', 
           padding: '15px', 
@@ -2306,7 +2293,6 @@ export default function Me() {
                 color: theme.text,
               }} 
             />
-            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
             <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
@@ -2325,7 +2311,6 @@ export default function Me() {
                 color: theme.text,
               }} 
             />
-            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
             <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
@@ -2344,7 +2329,6 @@ export default function Me() {
                 color: theme.text,
               }} 
             />
-            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
             <label style={{ color: theme.text }}>
