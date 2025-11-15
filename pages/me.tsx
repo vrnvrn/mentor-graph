@@ -198,12 +198,9 @@ export default function Me() {
   const [showArkivWarning, setShowArkivWarning] = useState(false);
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
 
-  // Check if user has dismissed the warning before
+  // Show warning popup every time the page loads
   useEffect(() => {
-    const hasSeenWarning = localStorage.getItem('arkiv-warning-dismissed');
-    if (!hasSeenWarning) {
-      setShowArkivWarning(true);
-    }
+    setShowArkivWarning(true);
   }, []);
 
   // Check for connected wallet on mount
