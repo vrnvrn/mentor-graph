@@ -52,9 +52,19 @@ Implemented:
   - derive a live “expires in X min” label using a 10s interval
   - hide expired asks/offers from the global network view
 
-## Phase 5: Value Infusion
+## Phase ALWAYS: Value Infusion
 
 In Progress:
 - Verifiability
     - Display transaction hashes for all transactions
         Note: As entity does not store transaction hash, we need to make workarounds. First workaround is to display a copyable Tx immediately after creation (lost after page refresh).
+- Transparency
+    - Added warnings to make it clear to users that information stored on Arkiv is immutable and only editable on the front-end.
+
+## Phase 5: Analytics
+
+In Progress:
+- Live updates to network dashboard with Arkiv subscriptions
+- Experiment with filtering & sorting algorithms
+
+Note: Ran into rate limit errors when generating dummy data. Reached out on the Discord for more info, created doc with more information.
