@@ -39,3 +39,15 @@ Implemented:
   - shows a global view of open asks and active offers across wallets
   - includes a "Filter by skill" input, wired to `/api/network?skill=...`
   - displays wallet, skill, message, status, and spaceId 
+
+## Phase 4: TTL-Aware UX
+
+Implemented:
+- Defined explicit TTL constants per entity type:
+  - `ASK_TTL_SECONDS = 3600` (short-lived help requests)
+  - `OFFER_TTL_SECONDS = 7200` (slightly longer availability windows)
+- Surfaced TTL to the frontend as `ttlSeconds` on each `Ask` and `Offer`.
+- On `/me` and `/network`:
+  - compute `expiresAt = createdAt + ttlSeconds`
+  - derive a live “expires in X min” label using a 10s interval
+  - hide expired asks/offers from the global network view
