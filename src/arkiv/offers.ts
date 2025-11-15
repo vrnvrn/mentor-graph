@@ -22,18 +22,21 @@ export async function createOffer({
   message,
   availabilityWindow,
   privateKey,
+  expiresIn,
 }: {
   wallet: string;
   skill: string;
   message: string;
   availabilityWindow: string;
   privateKey: `0x${string}`;
+  expiresIn?: number;
 }): Promise<{ key: string; txHash: string }> {
   const walletClient = getWalletClientFromPrivateKey(privateKey);
   const enc = new TextEncoder();
   const spaceId = 'local-dev';
   const status = 'active';
   const createdAt = new Date().toISOString();
+  const ttl = expiresIn || OFFER_TTL_SECONDS;
 
   const { entityKey, txHash } = await walletClient.createEntity({
     payload: enc.encode(JSON.stringify({
@@ -49,7 +52,7 @@ export async function createOffer({
       { key: 'createdAt', value: createdAt },
       { key: 'status', value: status },
     ],
-    expiresIn: OFFER_TTL_SECONDS,
+    expiresIn: ttl,
   });
 
   await walletClient.createEntity({
@@ -63,7 +66,7 @@ export async function createOffer({
       { key: 'wallet', value: wallet },
       { key: 'spaceId', value: spaceId },
     ],
-    expiresIn: OFFER_TTL_SECONDS,
+    expiresIn: ttl,
   });
 
   return { key: entityKey, txHash };

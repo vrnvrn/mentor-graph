@@ -35,7 +35,7 @@ export default async function handler(req: any, res: any) {
         });
         res.json({ ok: true });
       } else if (action === 'createAsk') {
-        const { skill, message } = req.body;
+        const { skill, message, expiresIn } = req.body;
         if (!skill || !message) {
           return res.status(400).json({ ok: false, error: 'skill and message are required' });
         }
@@ -44,10 +44,11 @@ export default async function handler(req: any, res: any) {
           skill,
           message,
           privateKey: ARKIV_PRIVATE_KEY,
+          expiresIn: expiresIn ? parseInt(expiresIn, 10) : undefined,
         });
         res.json({ ok: true, key, txHash });
       } else if (action === 'createOffer') {
-        const { skill, message, availabilityWindow } = req.body;
+        const { skill, message, availabilityWindow, expiresIn } = req.body;
         if (!skill || !message || !availabilityWindow) {
           return res.status(400).json({ ok: false, error: 'skill, message, and availabilityWindow are required' });
         }
@@ -57,6 +58,7 @@ export default async function handler(req: any, res: any) {
           message,
           availabilityWindow,
           privateKey: ARKIV_PRIVATE_KEY,
+          expiresIn: expiresIn ? parseInt(expiresIn, 10) : undefined,
         });
         res.json({ ok: true, key, txHash });
       } else {

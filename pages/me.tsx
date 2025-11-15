@@ -161,11 +161,21 @@ export default function Me() {
     const formData = new FormData(e.target as HTMLFormElement);
     const skill = formData.get('skill') as string;
     const message = formData.get('message') as string;
+    const expiresInValue = formData.get('expiresIn') as string;
+    const expiresInUnit = formData.get('expiresInUnit') as string;
+
+    let expiresIn: number | undefined;
+    if (expiresInValue) {
+      const value = parseFloat(expiresInValue);
+      const multiplier = expiresInUnit === 'minutes' ? 60 : expiresInUnit === 'hours' ? 3600 : expiresInUnit === 'days' ? 86400 : 1;
+      expiresIn = Math.floor(value * multiplier);
+    }
 
     const payload = {
       action: 'createAsk',
       skill,
       message,
+      expiresIn: expiresIn || undefined,
     };
     console.log('Creating ask:', payload);
 
@@ -204,12 +214,22 @@ export default function Me() {
     const skill = formData.get('skill') as string;
     const message = formData.get('message') as string;
     const availabilityWindow = formData.get('availabilityWindow') as string;
+    const expiresInValue = formData.get('expiresIn') as string;
+    const expiresInUnit = formData.get('expiresInUnit') as string;
+
+    let expiresIn: number | undefined;
+    if (expiresInValue) {
+      const value = parseFloat(expiresInValue);
+      const multiplier = expiresInUnit === 'minutes' ? 60 : expiresInUnit === 'hours' ? 3600 : expiresInUnit === 'days' ? 86400 : 1;
+      expiresIn = Math.floor(value * multiplier);
+    }
 
     const payload = {
       action: 'createOffer',
       skill,
       message,
       availabilityWindow,
+      expiresIn: expiresIn || undefined,
     };
     console.log('Creating offer:', payload);
 
@@ -316,6 +336,18 @@ export default function Me() {
               <input type="text" name="message" required style={{ marginLeft: '10px' }} />
             </label>
           </div>
+          <div style={{ marginBottom: '10px' }}>
+            <label>
+              Expiration (default: 1 hour):
+              <input type="number" name="expiresIn" min="0.1" step="0.1" placeholder="1" style={{ marginLeft: '10px', width: '80px' }} />
+              <select name="expiresInUnit" style={{ marginLeft: '5px' }}>
+                <option value="seconds">seconds</option>
+                <option value="minutes">minutes</option>
+                <option value="hours" selected>hours</option>
+                <option value="days">days</option>
+              </select>
+            </label>
+          </div>
           <button type="submit" disabled={submitting === 'ask'}>
             {submitting === 'ask' ? 'Creating...' : 'Create Ask'}
           </button>
@@ -383,6 +415,18 @@ export default function Me() {
             <label>
               Availability Window:
               <input type="text" name="availabilityWindow" required style={{ marginLeft: '10px' }} />
+            </label>
+          </div>
+          <div style={{ marginBottom: '10px' }}>
+            <label>
+              Expiration (default: 2 hours):
+              <input type="number" name="expiresIn" min="0.1" step="0.1" placeholder="2" style={{ marginLeft: '10px', width: '80px' }} />
+              <select name="expiresInUnit" style={{ marginLeft: '5px' }}>
+                <option value="seconds">seconds</option>
+                <option value="minutes">minutes</option>
+                <option value="hours" selected>hours</option>
+                <option value="days">days</option>
+              </select>
             </label>
           </div>
           <button type="submit" disabled={submitting === 'offer'}>

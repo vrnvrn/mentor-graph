@@ -20,17 +20,20 @@ export async function createAsk({
   skill,
   message,
   privateKey,
+  expiresIn,
 }: {
   wallet: string;
   skill: string;
   message: string;
   privateKey: `0x${string}`;
+  expiresIn?: number;
 }): Promise<{ key: string; txHash: string }> {
   const walletClient = getWalletClientFromPrivateKey(privateKey);
   const enc = new TextEncoder();
   const spaceId = 'local-dev';
   const status = 'open';
   const createdAt = new Date().toISOString();
+  const ttl = expiresIn || ASK_TTL_SECONDS;
 
   const { entityKey, txHash } = await walletClient.createEntity({
     payload: enc.encode(JSON.stringify({
@@ -45,7 +48,7 @@ export async function createAsk({
       { key: 'createdAt', value: createdAt },
       { key: 'status', value: status },
     ],
-    expiresIn: ASK_TTL_SECONDS,
+    expiresIn: ttl,
   });
 
   await walletClient.createEntity({
@@ -59,7 +62,7 @@ export async function createAsk({
       { key: 'wallet', value: wallet },
       { key: 'spaceId', value: spaceId },
     ],
-    expiresIn: ASK_TTL_SECONDS,
+    expiresIn: ttl,
   });
 
   return { key: entityKey, txHash };
