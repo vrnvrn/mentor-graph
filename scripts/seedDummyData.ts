@@ -10,6 +10,9 @@ import { CURRENT_WALLET, ARKIV_PRIVATE_KEY } from '../src/config';
 // Generate dummy wallet addresses (for testing)
 const generateWallet = (index: number) => `0x${'0'.repeat(40 - index.toString().length)}${index}`;
 
+// Delay function to avoid rate limiting
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 async function seedDummyData() {
   console.log('🌱 Seeding dummy data for MentorGraph...');
   console.log(`Using wallet: ${CURRENT_WALLET}`);
@@ -17,6 +20,7 @@ async function seedDummyData() {
   try {
     // 1. Create a comprehensive user profile
     console.log('\n📝 Creating user profile...');
+    await delay(1000); // Wait 1 second before starting
     const profileResult = await createUserProfile({
       wallet: CURRENT_WALLET,
       displayName: 'Alex Mentor',
@@ -52,6 +56,7 @@ async function seedDummyData() {
     ];
 
     for (const ask of asks) {
+      await delay(2000); // Wait 2 seconds between asks to avoid rate limit
       const result = await createAsk({
         wallet: CURRENT_WALLET,
         skill: ask.skill,
@@ -72,6 +77,7 @@ async function seedDummyData() {
     ];
 
     for (const offer of offers) {
+      await delay(2000); // Wait 2 seconds between offers
       const result = await createOffer({
         wallet: CURRENT_WALLET,
         skill: offer.skill,
@@ -119,6 +125,7 @@ async function seedDummyData() {
 
     const sessionKeys: string[] = [];
     for (const session of sessions) {
+      await delay(2000); // Wait 2 seconds between sessions
       const result = await createSession(session);
       sessionKeys.push(result.key);
       console.log(`✅ Session created: ${result.key}`);
@@ -166,6 +173,7 @@ async function seedDummyData() {
     ];
 
     for (const feedback of feedbacks) {
+      await delay(2000); // Wait 2 seconds between feedback
       const result = await createFeedback(feedback);
       console.log(`✅ Feedback created: ${result.key}`);
     }
@@ -200,6 +208,7 @@ async function seedDummyData() {
     ];
 
     for (const edge of trustEdges) {
+      await delay(2000); // Wait 2 seconds between trust edges
       const result = await createTrustEdge(edge);
       console.log(`✅ Trust edge created: ${result.key}`);
     }
