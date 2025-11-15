@@ -1,50 +1,174 @@
 import { getProfileByWallet, createUserProfile, updateUserProfile } from "../../src/arkiv/profiles"
 import { listAsksForWallet, createAsk } from "../../src/arkiv/asks"
 import { listOffersForWallet, createOffer } from "../../src/arkiv/offers"
-import { CURRENT_WALLET, ARKIV_PRIVATE_KEY } from "../../src/config"
+import { listSessionsForWallet } from "../../src/arkiv/sessions"
+import { listFeedbackForWallet } from "../../src/arkiv/feedback"
+import { CURRENT_WALLET, getPrivateKey } from "../../src/config"
 
 export default async function handler(req: any, res: any) {
   try {
     if (req.method === 'GET') {
-      const [profile, asks, offers] = await Promise.all([
-        getProfileByWallet(CURRENT_WALLET),
-        listAsksForWallet(CURRENT_WALLET),
-        listOffersForWallet(CURRENT_WALLET),
+      // Get wallet address from query param, fallback to CURRENT_WALLET for backward compatibility
+      const wallet = (req.query.wallet as string) || CURRENT_WALLET || '';
+      if (!wallet) {
+        return res.status(400).json({ ok: false, error: 'No wallet address provided' });
+      }
+      
+      const [profile, asks, offers, sessions, feedback] = await Promise.all([
+        getProfileByWallet(wallet),
+        listAsksForWallet(wallet),
+        listOffersForWallet(wallet),
+        listSessionsForWallet(wallet),
+        listFeedbackForWallet(wallet),
       ]);
 
+      // Compute reputation metadata from sessions and feedback
+      const sessionsCompleted = sessions.filter(s => s.status === 'completed').length;
+      const sessionsGiven = sessions.filter(s => s.mentorWallet.toLowerCase() === wallet.toLowerCase() && s.status === 'completed').length;
+      const sessionsReceived = sessions.filter(s => s.learnerWallet.toLowerCase() === wallet.toLowerCase() && s.status === 'completed').length;
+      
+      const ratingsForWallet = feedback.filter(f => f.toWallet.toLowerCase() === wallet.toLowerCase() && f.rating).map(f => f.rating!);
+      const avgRating = ratingsForWallet.length > 0 
+        ? ratingsForWallet.reduce((sum, r) => sum + r, 0) / ratingsForWallet.length 
+        : 0;
+      
+      const npsScores = feedback.filter(f => f.toWallet.toLowerCase() === wallet.toLowerCase() && f.npsScore !== undefined).map(f => f.npsScore!);
+      const npsScore = npsScores.length > 0
+        ? npsScores.reduce((sum, n) => sum + n, 0) / npsScores.length
+        : 0;
+
+      // Compute topSkillsUsage from sessions
+      const skillCounts: Record<string, number> = {};
+      sessions.filter(s => s.status === 'completed').forEach(s => {
+        skillCounts[s.skill] = (skillCounts[s.skill] || 0) + 1;
+      });
+      const topSkillsUsage = Object.entries(skillCounts)
+        .map(([skill, count]) => ({ skill, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      // Extract peerTestimonials from feedback
+      const peerTestimonials = feedback
+        .filter(f => f.toWallet.toLowerCase() === wallet.toLowerCase() && f.text)
+        .map(f => ({
+          text: f.text!,
+          timestamp: f.createdAt,
+          fromWallet: f.fromWallet,
+        }));
+
+      // Compute reputationScore (simple formula: sessions * avgRating * 10)
+      const reputationScore = Math.round(sessionsCompleted * avgRating * 10);
+
+      // Merge computed fields into profile if it exists
+      const enrichedProfile = profile ? {
+        ...profile,
+        sessionsCompleted,
+        sessionsGiven,
+        sessionsReceived,
+        avgRating: Math.round(avgRating * 10) / 10, // Round to 1 decimal
+        npsScore: Math.round(npsScore),
+        topSkillsUsage,
+        peerTestimonials,
+        reputationScore,
+        lastActiveTimestamp: new Date().toISOString(),
+      } : null;
+
       res.json({
-        wallet: CURRENT_WALLET,
-        profile,
+        wallet,
+        profile: enrichedProfile,
         asks,
         offers,
+        sessions,
+        feedback,
       });
     } else if (req.method === 'POST') {
-      const { action } = req.body;
+      const { action, wallet: requestWallet } = req.body;
+      // Use wallet from request body, fallback to CURRENT_WALLET for backward compatibility
+      const wallet = requestWallet || CURRENT_WALLET || '';
+      if (!wallet) {
+        return res.status(400).json({ ok: false, error: 'No wallet address provided' });
+      }
 
       if (action === 'createProfile') {
-        const { displayName, skills, timezone } = req.body;
+        const { 
+          displayName, 
+          username,
+          profileImage,
+          bio,
+          bioShort,
+          bioLong,
+          skills, 
+          skillsArray,
+          timezone,
+          languages,
+          contactLinks,
+          seniority,
+          domainsOfInterest,
+          mentorRoles,
+          learnerRoles,
+        } = req.body;
         if (!displayName) {
           return res.status(400).json({ ok: false, error: 'displayName is required' });
         }
         await createUserProfile({
-          wallet: CURRENT_WALLET,
+          wallet,
           displayName,
+          username,
+          profileImage,
+          bio,
+          bioShort,
+          bioLong,
           skills: skills || '',
+          skillsArray: skillsArray || (skills ? skills.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined),
           timezone: timezone || '',
-          privateKey: ARKIV_PRIVATE_KEY,
+          languages: languages || undefined,
+          contactLinks: contactLinks || undefined,
+          seniority: seniority || undefined,
+          domainsOfInterest: domainsOfInterest || undefined,
+          mentorRoles: mentorRoles || undefined,
+          learnerRoles: learnerRoles || undefined,
+          privateKey: getPrivateKey(),
         });
         res.json({ ok: true });
       } else if (action === 'updateProfile') {
-        const { displayName, skills, timezone } = req.body;
+        const { 
+          displayName,
+          username,
+          profileImage,
+          bio,
+          bioShort,
+          bioLong,
+          skills, 
+          skillsArray,
+          timezone,
+          languages,
+          contactLinks,
+          seniority,
+          domainsOfInterest,
+          mentorRoles,
+          learnerRoles,
+        } = req.body;
         if (!displayName) {
           return res.status(400).json({ ok: false, error: 'displayName is required' });
         }
         await updateUserProfile({
-          wallet: CURRENT_WALLET,
+          wallet,
           displayName,
+          username,
+          profileImage,
+          bio,
+          bioShort,
+          bioLong,
           skills: skills || '',
+          skillsArray: skillsArray || (skills ? skills.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined),
           timezone: timezone || '',
-          privateKey: ARKIV_PRIVATE_KEY,
+          languages: languages || undefined,
+          contactLinks: contactLinks || undefined,
+          seniority: seniority || undefined,
+          domainsOfInterest: domainsOfInterest || undefined,
+          mentorRoles: mentorRoles || undefined,
+          learnerRoles: learnerRoles || undefined,
+          privateKey: getPrivateKey(),
         });
         res.json({ ok: true });
       } else if (action === 'createAsk') {
@@ -52,11 +176,11 @@ export default async function handler(req: any, res: any) {
         if (!skill || !message) {
           return res.status(400).json({ ok: false, error: 'skill and message are required' });
         }
-        const { key, txHash } = await createAsk({
-          wallet: CURRENT_WALLET,
+            const { key, txHash } = await createAsk({
+              wallet,
           skill,
           message,
-          privateKey: ARKIV_PRIVATE_KEY,
+          privateKey: getPrivateKey(),
           expiresIn: expiresIn ? parseInt(expiresIn, 10) : undefined,
         });
         res.json({ ok: true, key, txHash });
@@ -65,12 +189,12 @@ export default async function handler(req: any, res: any) {
         if (!skill || !message || !availabilityWindow) {
           return res.status(400).json({ ok: false, error: 'skill, message, and availabilityWindow are required' });
         }
-        const { key, txHash } = await createOffer({
-          wallet: CURRENT_WALLET,
+            const { key, txHash } = await createOffer({
+              wallet,
           skill,
           message,
           availabilityWindow,
-          privateKey: ARKIV_PRIVATE_KEY,
+          privateKey: getPrivateKey(),
           expiresIn: expiresIn ? parseInt(expiresIn, 10) : undefined,
         });
         res.json({ ok: true, key, txHash });

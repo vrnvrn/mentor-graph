@@ -4,9 +4,41 @@ import { useRouter } from 'next/router';
 type Profile = {
   key: string;
   wallet: string;
+  // Core Identity
   displayName: string;
-  skills: string;
+  username?: string;
+  profileImage?: string;
+  bio?: string; // Legacy
+  bioShort?: string;
+  bioLong?: string;
   timezone: string;
+  languages?: string[];
+  contactLinks?: {
+    twitter?: string;
+    github?: string;
+    telegram?: string;
+    discord?: string;
+  };
+  // Skills / Roles
+  skills: string;
+  skillsArray?: string[];
+  seniority?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  domainsOfInterest?: string[];
+  mentorRoles?: string[];
+  learnerRoles?: string[];
+  // Reputation
+  sessionsCompleted?: number;
+  sessionsGiven?: number;
+  sessionsReceived?: number;
+  avgRating?: number;
+  npsScore?: number;
+  topSkillsUsage?: Array<{ skill: string; count: number }>;
+  peerTestimonials?: Array<{ text: string; timestamp: string; fromWallet: string }>;
+  trustEdges?: Array<{ toWallet: string; strength: number; createdAt: string }>;
+  // System
+  lastActiveTimestamp?: string;
+  communityAffiliations?: string[];
+  reputationScore?: number;
   spaceId: string;
   createdAt?: string;
 };
@@ -36,11 +68,44 @@ type Offer = {
   txHash?: string;
 };
 
+type Session = {
+  key: string;
+  mentorWallet: string;
+  learnerWallet: string;
+  skill: string;
+  spaceId: string;
+  createdAt: string;
+  sessionDate: string;
+  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
+  duration?: number;
+  notes?: string;
+  feedbackKey?: string;
+  txHash?: string;
+};
+
+type Feedback = {
+  key: string;
+  sessionKey: string;
+  fromWallet: string;
+  toWallet: string;
+  role: 'mentor' | 'learner';
+  spaceId: string;
+  createdAt: string;
+  rating?: number;
+  npsScore?: number;
+  text?: string;
+  skills?: string[];
+  wouldRecommend?: boolean;
+  txHash?: string;
+};
+
 type MeData = {
   wallet: string;
   profile: Profile | null;
   asks: Ask[];
   offers: Offer[];
+  sessions: Session[];
+  feedback: Feedback[];
 };
 
 function formatTimeRemaining(createdAt: string, ttlSeconds: number): string {
@@ -75,6 +140,33 @@ function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text);
 }
 
+function shortenWallet(wallet: string): string {
+  if (!wallet || wallet.length < 10) return wallet;
+  return `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
+}
+
+function ArkivHelperText({ darkMode }: { darkMode: boolean }) {
+  return (
+    <div style={{
+      marginTop: '6px',
+      fontSize: '12px',
+      color: darkMode ? '#b0b0b0' : '#6c757d',
+      fontStyle: 'italic',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+    }}>
+      <span>⚠️</span>
+      <span>Immutable data. Stored permanently on <a 
+        href="https://explorer.mendoza.hoodi.arkiv.network" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        style={{ color: '#0066cc', textDecoration: 'underline' }}
+      >Arkiv</a>. Edits only change what is displayed.</span>
+    </div>
+  );
+}
+
 export default function Me() {
   const router = useRouter();
   const [data, setData] = useState<MeData | null>(null);
@@ -85,10 +177,39 @@ export default function Me() {
   const [, setNow] = useState(Date.now());
   const [txHashMap, setTxHashMap] = useState<Record<string, string>>({});
   const [editingProfile, setEditingProfile] = useState(false);
+  const [showArkivWarning, setShowArkivWarning] = useState(false);
+  const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
 
-  const fetchMe = async () => {
+  // Check if user has dismissed the warning before
+  useEffect(() => {
+    const hasSeenWarning = localStorage.getItem('arkiv-warning-dismissed');
+    if (!hasSeenWarning) {
+      setShowArkivWarning(true);
+    }
+  }, []);
+
+  // Check for connected wallet on mount
+  useEffect(() => {
+    const wallet = localStorage.getItem('connectedWallet');
+    if (wallet) {
+      setConnectedWallet(wallet);
+    } else {
+      // If no wallet connected, redirect to home
+      router.push('/');
+    }
+  }, [router]);
+
+  const fetchMe = async (wallet?: string) => {
     try {
-      const res = await fetch('/api/me');
+      const walletToUse = wallet || connectedWallet;
+      if (!walletToUse) {
+        setError('No wallet connected');
+        setLoading(false);
+        return;
+      }
+
+      const url = walletToUse ? `/api/me?wallet=${encodeURIComponent(walletToUse)}` : '/api/me';
+      const res = await fetch(url);
       if (!res.ok) {
         const errorData = await res.json();
         console.error('Error fetching /api/me:', res.status, errorData);
@@ -108,8 +229,16 @@ export default function Me() {
   };
 
   useEffect(() => {
-    fetchMe();
-  }, []);
+    if (connectedWallet) {
+      fetchMe(connectedWallet);
+    }
+  }, [connectedWallet]);
+
+  const handleDisconnect = () => {
+    localStorage.removeItem('connectedWallet');
+    setConnectedWallet(null);
+    router.push('/');
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -118,20 +247,84 @@ export default function Me() {
     return () => clearInterval(interval);
   }, []);
 
+  // Set body background to match theme
+  useEffect(() => {
+    document.body.style.backgroundColor = darkMode ? '#1a1a1a' : '#f8f9fa';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    return () => {
+      document.body.style.backgroundColor = '';
+      document.body.style.margin = '';
+      document.body.style.padding = '';
+    };
+  }, [darkMode]);
+
   const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting('profile');
     setError(null);
     const formData = new FormData(e.target as HTMLFormElement);
+    
+    // Core Identity
     const displayName = formData.get('displayName') as string;
-    const skills = formData.get('skills') as string;
+    const username = formData.get('username') as string;
+    const profileImage = formData.get('profileImage') as string;
+    const bio = formData.get('bio') as string; // Legacy
+    const bioShort = formData.get('bioShort') as string;
+    const bioLong = formData.get('bioLong') as string;
     const timezone = formData.get('timezone') as string;
+    const languagesStr = formData.get('languages') as string;
+    const languages = languagesStr ? languagesStr.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+    
+    // Contact Links
+    const contactLinks = {
+      twitter: formData.get('contactTwitter') as string || undefined,
+      github: formData.get('contactGithub') as string || undefined,
+      telegram: formData.get('contactTelegram') as string || undefined,
+      discord: formData.get('contactDiscord') as string || undefined,
+    };
+    // Remove undefined values
+    Object.keys(contactLinks).forEach(key => {
+      if (!contactLinks[key as keyof typeof contactLinks]) {
+        delete contactLinks[key as keyof typeof contactLinks];
+      }
+    });
+    
+    // Skills / Roles
+    const skills = formData.get('skills') as string;
+    const skillsArray = skills ? skills.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+    const seniority = formData.get('seniority') as string || undefined;
+    const domainsStr = formData.get('domainsOfInterest') as string;
+    const domainsOfInterest = domainsStr ? domainsStr.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+    const mentorRolesStr = formData.get('mentorRoles') as string;
+    const mentorRoles = mentorRolesStr ? mentorRolesStr.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+    const learnerRolesStr = formData.get('learnerRoles') as string;
+    const learnerRoles = learnerRolesStr ? learnerRolesStr.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+
+    if (!connectedWallet) {
+      setError('No wallet connected');
+      setSubmitting(null);
+      return;
+    }
 
     const payload = {
       action: 'createProfile',
+      wallet: connectedWallet,
       displayName,
+      username: username || undefined,
+      profileImage: profileImage || undefined,
+      bio: bio || undefined, // Legacy
+      bioShort: bioShort || undefined,
+      bioLong: bioLong || undefined,
       skills,
+      skillsArray,
       timezone,
+      languages,
+      contactLinks: Object.keys(contactLinks).length > 0 ? contactLinks : undefined,
+      seniority: seniority as 'beginner' | 'intermediate' | 'advanced' | 'expert' | undefined,
+      domainsOfInterest,
+      mentorRoles,
+      learnerRoles,
     };
     console.log('Creating profile:', payload);
 
@@ -144,7 +337,7 @@ export default function Me() {
       if (res.ok) {
         const result = await res.json();
         console.log('Profile created:', result);
-        fetchMe();
+        fetchMe(connectedWallet);
       } else {
         const errorData = await res.json();
         console.error('Error creating profile:', res.status, errorData);
@@ -163,15 +356,67 @@ export default function Me() {
     setSubmitting('profile');
     setError(null);
     const formData = new FormData(e.target as HTMLFormElement);
+    
+    // Core Identity
     const displayName = formData.get('displayName') as string;
-    const skills = formData.get('skills') as string;
+    const username = formData.get('username') as string;
+    const profileImage = formData.get('profileImage') as string;
+    const bio = formData.get('bio') as string; // Legacy
+    const bioShort = formData.get('bioShort') as string;
+    const bioLong = formData.get('bioLong') as string;
     const timezone = formData.get('timezone') as string;
+    const languagesStr = formData.get('languages') as string;
+    const languages = languagesStr ? languagesStr.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+    
+    // Contact Links
+    const contactLinks = {
+      twitter: formData.get('contactTwitter') as string || undefined,
+      github: formData.get('contactGithub') as string || undefined,
+      telegram: formData.get('contactTelegram') as string || undefined,
+      discord: formData.get('contactDiscord') as string || undefined,
+    };
+    // Remove undefined values
+    Object.keys(contactLinks).forEach(key => {
+      if (!contactLinks[key as keyof typeof contactLinks]) {
+        delete contactLinks[key as keyof typeof contactLinks];
+      }
+    });
+    
+    // Skills / Roles
+    const skills = formData.get('skills') as string;
+    const skillsArray = skills ? skills.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+    const seniority = formData.get('seniority') as string || undefined;
+    const domainsStr = formData.get('domainsOfInterest') as string;
+    const domainsOfInterest = domainsStr ? domainsStr.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+    const mentorRolesStr = formData.get('mentorRoles') as string;
+    const mentorRoles = mentorRolesStr ? mentorRolesStr.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+    const learnerRolesStr = formData.get('learnerRoles') as string;
+    const learnerRoles = learnerRolesStr ? learnerRolesStr.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+
+    if (!connectedWallet) {
+      setError('No wallet connected');
+      setSubmitting(null);
+      return;
+    }
 
     const payload = {
       action: 'updateProfile',
+      wallet: connectedWallet,
       displayName,
+      username: username || undefined,
+      profileImage: profileImage || undefined,
+      bio: bio || undefined, // Legacy
+      bioShort: bioShort || undefined,
+      bioLong: bioLong || undefined,
       skills,
+      skillsArray,
       timezone,
+      languages,
+      contactLinks: Object.keys(contactLinks).length > 0 ? contactLinks : undefined,
+      seniority: seniority as 'beginner' | 'intermediate' | 'advanced' | 'expert' | undefined,
+      domainsOfInterest,
+      mentorRoles,
+      learnerRoles,
     };
     console.log('Updating profile:', payload);
 
@@ -185,7 +430,7 @@ export default function Me() {
         const result = await res.json();
         console.log('Profile updated:', result);
         setEditingProfile(false);
-        fetchMe();
+        fetchMe(connectedWallet);
       } else {
         const errorData = await res.json();
         console.error('Error updating profile:', res.status, errorData);
@@ -216,8 +461,15 @@ export default function Me() {
       expiresIn = Math.floor(value * multiplier);
     }
 
+    if (!connectedWallet) {
+      setError('No wallet connected');
+      setSubmitting(null);
+      return;
+    }
+
     const payload = {
       action: 'createAsk',
+      wallet: connectedWallet,
       skill,
       message,
       expiresIn: expiresIn || undefined,
@@ -237,7 +489,7 @@ export default function Me() {
           setTxHashMap(prev => ({ ...prev, [result.key]: result.txHash }));
         }
         (e.target as HTMLFormElement).reset();
-        fetchMe();
+        fetchMe(connectedWallet);
       } else {
         const errorData = await res.json();
         console.error('Error creating ask:', res.status, errorData);
@@ -269,8 +521,15 @@ export default function Me() {
       expiresIn = Math.floor(value * multiplier);
     }
 
+    if (!connectedWallet) {
+      setError('No wallet connected');
+      setSubmitting(null);
+      return;
+    }
+
     const payload = {
       action: 'createOffer',
+      wallet: connectedWallet,
       skill,
       message,
       availabilityWindow,
@@ -291,7 +550,7 @@ export default function Me() {
           setTxHashMap(prev => ({ ...prev, [result.key]: result.txHash }));
         }
         (e.target as HTMLFormElement).reset();
-        fetchMe();
+        fetchMe(connectedWallet);
       } else {
         const errorData = await res.json();
         console.error('Error creating offer:', res.status, errorData);
@@ -327,10 +586,15 @@ export default function Me() {
   if (loading) {
     return (
       <main style={{ 
-        padding: '20px', 
         minHeight: '100vh',
         backgroundColor: theme.bg,
-        transition: 'background-color 0.3s ease'
+        transition: 'background-color 0.3s ease',
+        width: '100%',
+        margin: 0,
+        padding: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}>
         <div style={{ color: theme.textSecondary }}>Loading...</div>
       </main>
@@ -340,10 +604,15 @@ export default function Me() {
   if (!data) {
     return (
       <main style={{ 
-        padding: '20px',
         minHeight: '100vh',
         backgroundColor: theme.bg,
-        transition: 'background-color 0.3s ease'
+        transition: 'background-color 0.3s ease',
+        width: '100%',
+        margin: 0,
+        padding: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}>
         <div style={{ color: theme.errorText }}>Error loading data</div>
       </main>
@@ -352,17 +621,26 @@ export default function Me() {
 
   return (
     <main style={{ 
-      padding: '20px',
       minHeight: '100vh',
       backgroundColor: theme.bg,
-      transition: 'background-color 0.3s ease'
+      transition: 'background-color 0.3s ease',
+      width: '100%',
+      margin: 0,
+      padding: 0,
     }}>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '30px' 
+      <div style={{
+        maxWidth: '1400px',
+        margin: '0 auto',
+        padding: 'clamp(16px, 4vw, 32px)',
+        width: '100%',
+        boxSizing: 'border-box',
       }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '30px' 
+        }}>
         <h1 style={{ 
           margin: 0,
           color: theme.text,
@@ -437,6 +715,179 @@ export default function Me() {
         </div>
       )}
 
+      {/* Arkiv Immutability Warning Modal */}
+      {showArkivWarning && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px',
+        }}
+        onClick={() => {
+          localStorage.setItem('arkiv-warning-dismissed', 'true');
+          setShowArkivWarning(false);
+        }}
+        >
+          <div 
+            style={{
+              backgroundColor: theme.cardBg,
+              borderRadius: '12px',
+              padding: '32px',
+              maxWidth: '600px',
+              width: '100%',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+              border: `2px solid ${theme.border}`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              marginBottom: '20px',
+            }}>
+              <h2 style={{
+                margin: 0,
+                fontSize: '24px',
+                fontWeight: '700',
+                color: theme.errorText,
+              }}>
+                ⚠️ Attention!
+              </h2>
+              <button
+                onClick={() => {
+                  localStorage.setItem('arkiv-warning-dismissed', 'true');
+                  setShowArkivWarning(false);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  color: theme.textSecondary,
+                  cursor: 'pointer',
+                  padding: '0',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '4px',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = theme.hoverBg;
+                  e.currentTarget.style.color = theme.text;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = theme.textSecondary;
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{
+              color: theme.text,
+              fontSize: '16px',
+              lineHeight: '1.6',
+              marginBottom: '24px',
+            }}>
+              <p style={{ marginBottom: '16px' }}>
+                <strong>Everything entered on this site is stored on <a 
+                  href="https://explorer.mendoza.hoodi.arkiv.network" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ 
+                    color: '#0066cc',
+                    textDecoration: 'underline',
+                  }}
+                >Arkiv</a> and is <strong style={{ color: theme.errorText }}>immutable</strong>.</strong>
+              </p>
+              
+              <p style={{ marginBottom: '16px' }}>
+                When you edit your profile, it only changes on the front-end. Each edit creates a new entity on Arkiv. Your previous data remains permanently stored on the blockchain.
+              </p>
+              
+              <p style={{ 
+                marginBottom: 0,
+                padding: '12px',
+                backgroundColor: theme.errorBg,
+                borderRadius: '6px',
+                border: `1px solid ${theme.errorBorder}`,
+                color: theme.errorText,
+                fontWeight: '500',
+              }}>
+                ⚠️ Please be careful with all information you share. Once stored on Arkiv, it cannot be deleted or modified.
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                localStorage.setItem('arkiv-warning-dismissed', 'true');
+                setShowArkivWarning(false);
+              }}
+              style={{
+                width: '100%',
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: '600',
+                backgroundColor: '#0066cc',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#0052a3';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#0066cc';
+              }}
+            >
+              I Understand
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Persistent Arkiv Warning Banner */}
+      <div style={{
+        marginBottom: '24px',
+        padding: '14px 18px',
+        backgroundColor: darkMode ? '#2a1f1f' : '#fff3cd',
+        border: `1px solid ${darkMode ? '#5a2f2f' : '#ffc107'}`,
+        borderRadius: '8px',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '12px',
+      }}>
+        <span style={{ fontSize: '20px', flexShrink: 0 }}>⚠️</span>
+        <div style={{ flex: 1, color: darkMode ? '#ff6b6b' : '#856404', fontSize: '14px', lineHeight: '1.5' }}>
+          <strong>Data stored on Arkiv is immutable.</strong> All information you enter is permanently stored on the{' '}
+          <a 
+            href="https://explorer.mendoza.hoodi.arkiv.network" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ 
+              color: '#0066cc',
+              textDecoration: 'underline',
+            }}
+          >
+            Arkiv blockchain
+          </a>
+          {' '}and cannot be deleted or modified. Editing creates new entities. Previous data remains on-chain.
+        </div>
+      </div>
+
       <section style={{ 
         marginBottom: '40px', 
         padding: '20px', 
@@ -446,38 +897,278 @@ export default function Me() {
         boxShadow: theme.shadow,
         transition: 'all 0.3s ease'
       }}>
-        <h2 style={{ 
-          color: theme.text,
-          marginTop: 0,
-          transition: 'color 0.3s ease'
-        }}>
-          Wallet & Profile
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h2 style={{ 
+            color: theme.text,
+            marginTop: 0,
+            marginBottom: 0,
+            transition: 'color 0.3s ease'
+          }}>
+            Wallet & Profile
+          </h2>
+          <button
+            onClick={handleDisconnect}
+            style={{
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: '500',
+              backgroundColor: darkMode ? '#4a1a1a' : '#ffe6e6',
+              color: darkMode ? '#ff6b6b' : '#cc0000',
+              border: `1px solid ${darkMode ? '#5a2f2f' : '#ff9999'}`,
+              borderRadius: '6px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = darkMode ? '#5a2a2a' : '#ffcccc';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = darkMode ? '#4a1a1a' : '#ffe6e6';
+            }}
+          >
+            Disconnect Wallet
+          </button>
+        </div>
         <div style={{ marginBottom: '10px', color: theme.text }}>
-          <strong style={{ color: theme.textSecondary }}>Wallet:</strong> {data.wallet}
+          <strong style={{ color: theme.textSecondary }}>Wallet:</strong>{' '}
+          <span 
+            onClick={() => copyToClipboard(data.wallet)}
+            style={{ 
+              cursor: 'pointer',
+              fontFamily: 'monospace',
+              textDecoration: 'underline',
+              color: '#0066cc'
+            }}
+            title="Click to copy"
+          >
+            {shortenWallet(data.wallet)}
+          </span>
         </div>
 
         {data.profile ? (
           <div>
             {!editingProfile ? (
               <>
-                <div style={{ marginBottom: '10px', color: theme.text }}>
-                  <strong style={{ color: theme.textSecondary }}>Display Name:</strong> {data.profile.displayName}
-                </div>
-                <div style={{ marginBottom: '10px', color: theme.text }}>
-                  <strong style={{ color: theme.textSecondary }}>Skills:</strong> {data.profile.skills}
-                </div>
-                <div style={{ marginBottom: '10px', color: theme.text }}>
-                  <strong style={{ color: theme.textSecondary }}>Timezone:</strong> {data.profile.timezone}
-                </div>
-                <div style={{ marginBottom: '10px', color: theme.text }}>
-                  <strong style={{ color: theme.textSecondary }}>Space ID:</strong> {data.profile.spaceId}
-                </div>
-                {data.profile.createdAt && (
-                  <div style={{ marginBottom: '10px', color: theme.text }}>
-                    <strong style={{ color: theme.textSecondary }}>Created:</strong> {data.profile.createdAt}
+                {/* Core Identity */}
+                <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: `1px solid ${theme.borderLight}` }}>
+                  <h3 style={{ color: theme.text, marginTop: 0, marginBottom: '12px', fontSize: '18px' }}>Core Identity</h3>
+                  <div style={{ marginBottom: '8px', color: theme.text }}>
+                    <strong style={{ color: theme.textSecondary }}>Display Name:</strong> {data.profile.displayName}
                   </div>
-                )}
+                  {data.profile.username && (
+                    <div style={{ marginBottom: '8px', color: theme.text }}>
+                      <strong style={{ color: theme.textSecondary }}>Username:</strong> {data.profile.username}
+                    </div>
+                  )}
+                  {(data.profile.bioShort || data.profile.bio) && (
+                    <div style={{ marginBottom: '8px', color: theme.text }}>
+                      <strong style={{ color: theme.textSecondary }}>Short Bio:</strong> {data.profile.bioShort || data.profile.bio}
+                    </div>
+                  )}
+                  {data.profile.bioLong && (
+                    <div style={{ marginBottom: '8px', color: theme.text }}>
+                      <strong style={{ color: theme.textSecondary }}>Long Bio:</strong> {data.profile.bioLong}
+                    </div>
+                  )}
+                  <div style={{ marginBottom: '8px', color: theme.text }}>
+                    <strong style={{ color: theme.textSecondary }}>Timezone:</strong> {data.profile.timezone}
+                  </div>
+                  {data.profile.languages && data.profile.languages.length > 0 && (
+                    <div style={{ marginBottom: '8px', color: theme.text }}>
+                      <strong style={{ color: theme.textSecondary }}>Languages:</strong> {data.profile.languages.join(', ')}
+                    </div>
+                  )}
+                  {data.profile.contactLinks && Object.keys(data.profile.contactLinks).length > 0 && (
+                    <div style={{ marginBottom: '8px', color: theme.text }}>
+                      <strong style={{ color: theme.textSecondary }}>Contact:</strong>{' '}
+                      {data.profile.contactLinks.twitter && <span>Twitter: {data.profile.contactLinks.twitter} </span>}
+                      {data.profile.contactLinks.github && <span>GitHub: {data.profile.contactLinks.github} </span>}
+                      {data.profile.contactLinks.telegram && <span>Telegram: {data.profile.contactLinks.telegram} </span>}
+                      {data.profile.contactLinks.discord && <span>Discord: {data.profile.contactLinks.discord}</span>}
+                    </div>
+                  )}
+                </div>
+
+                {/* Skills / Roles */}
+                <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: `1px solid ${theme.borderLight}` }}>
+                  <h3 style={{ color: theme.text, marginTop: 0, marginBottom: '12px', fontSize: '18px' }}>Skills & Roles</h3>
+                  <div style={{ marginBottom: '8px', color: theme.text }}>
+                    <strong style={{ color: theme.textSecondary }}>Skills:</strong> {data.profile.skills || (data.profile.skillsArray ? data.profile.skillsArray.join(', ') : 'None')}
+                  </div>
+                  {data.profile.seniority && (
+                    <div style={{ marginBottom: '8px', color: theme.text }}>
+                      <strong style={{ color: theme.textSecondary }}>Seniority:</strong> {data.profile.seniority}
+                    </div>
+                  )}
+                  {data.profile.domainsOfInterest && data.profile.domainsOfInterest.length > 0 && (
+                    <div style={{ marginBottom: '8px', color: theme.text }}>
+                      <strong style={{ color: theme.textSecondary }}>Domains of Interest:</strong> {data.profile.domainsOfInterest.join(', ')}
+                    </div>
+                  )}
+                  {data.profile.mentorRoles && data.profile.mentorRoles.length > 0 && (
+                    <div style={{ marginBottom: '8px', color: theme.text }}>
+                      <strong style={{ color: theme.textSecondary }}>Mentor Roles:</strong> {data.profile.mentorRoles.join(', ')}
+                    </div>
+                  )}
+                  {data.profile.learnerRoles && data.profile.learnerRoles.length > 0 && (
+                    <div style={{ marginBottom: '8px', color: theme.text }}>
+                      <strong style={{ color: theme.textSecondary }}>Learner Roles:</strong> {data.profile.learnerRoles.join(', ')}
+                    </div>
+                  )}
+                </div>
+
+                {/* Reputation Panel */}
+                <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: `1px solid ${theme.borderLight}` }}>
+                  <h3 style={{ color: theme.text, marginTop: 0, marginBottom: '16px', fontSize: '18px' }}>Reputation</h3>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                    gap: '16px',
+                    marginBottom: '16px'
+                  }}>
+                    {data.profile.sessionsCompleted !== undefined && (
+                      <div style={{ 
+                        padding: '12px', 
+                        backgroundColor: theme.hoverBg, 
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.borderLight}`
+                      }}>
+                        <div style={{ fontSize: '12px', color: theme.textSecondary, marginBottom: '4px' }}>Sessions Completed</div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.text }}>{data.profile.sessionsCompleted}</div>
+                      </div>
+                    )}
+                    {data.profile.sessionsGiven !== undefined && (
+                      <div style={{ 
+                        padding: '12px', 
+                        backgroundColor: theme.hoverBg, 
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.borderLight}`
+                      }}>
+                        <div style={{ fontSize: '12px', color: theme.textSecondary, marginBottom: '4px' }}>Sessions Given</div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.text }}>{data.profile.sessionsGiven}</div>
+                      </div>
+                    )}
+                    {data.profile.sessionsReceived !== undefined && (
+                      <div style={{ 
+                        padding: '12px', 
+                        backgroundColor: theme.hoverBg, 
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.borderLight}`
+                      }}>
+                        <div style={{ fontSize: '12px', color: theme.textSecondary, marginBottom: '4px' }}>Sessions Received</div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.text }}>{data.profile.sessionsReceived}</div>
+                      </div>
+                    )}
+                    {data.profile.avgRating !== undefined && data.profile.avgRating > 0 && (
+                      <div style={{ 
+                        padding: '12px', 
+                        backgroundColor: theme.hoverBg, 
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.borderLight}`
+                      }}>
+                        <div style={{ fontSize: '12px', color: theme.textSecondary, marginBottom: '4px' }}>Average Rating</div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.text }}>
+                          {data.profile.avgRating.toFixed(1)}<span style={{ fontSize: '14px', fontWeight: 'normal', color: theme.textSecondary }}>/5</span>
+                        </div>
+                      </div>
+                    )}
+                    {data.profile.npsScore !== undefined && (
+                      <div style={{ 
+                        padding: '12px', 
+                        backgroundColor: theme.hoverBg, 
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.borderLight}`
+                      }}>
+                        <div style={{ fontSize: '12px', color: theme.textSecondary, marginBottom: '4px' }}>NPS Score</div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.text }}>{data.profile.npsScore}</div>
+                      </div>
+                    )}
+                    {data.profile.reputationScore !== undefined && (
+                      <div style={{ 
+                        padding: '12px', 
+                        backgroundColor: theme.hoverBg, 
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.borderLight}`
+                      }}>
+                        <div style={{ fontSize: '12px', color: theme.textSecondary, marginBottom: '4px' }}>Reputation Score</div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.text }}>{data.profile.reputationScore}</div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {data.profile.topSkillsUsage && data.profile.topSkillsUsage.length > 0 && (
+                    <div style={{ marginTop: '16px' }}>
+                      <div style={{ fontSize: '14px', color: theme.textSecondary, marginBottom: '8px' }}>Top Skills Used</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {data.profile.topSkillsUsage.map((item, idx) => (
+                          <div key={idx} style={{
+                            padding: '6px 12px',
+                            backgroundColor: theme.hoverBg,
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            color: theme.text,
+                            border: `1px solid ${theme.borderLight}`
+                          }}>
+                            {item.skill} ({item.count})
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {data.profile.trustEdges && data.profile.trustEdges.length > 0 && (
+                    <div style={{ marginTop: '16px' }}>
+                      <div style={{ fontSize: '14px', color: theme.textSecondary, marginBottom: '8px' }}>Trust Relationships</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {data.profile.trustEdges.map((edge, idx) => (
+                          <div key={idx} style={{
+                            padding: '6px 12px',
+                            backgroundColor: theme.hoverBg,
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            color: theme.text,
+                            border: `1px solid ${theme.borderLight}`
+                          }}>
+                            {shortenWallet(edge.toWallet)} (strength: {edge.strength})
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {data.profile.peerTestimonials && data.profile.peerTestimonials.length > 0 && (
+                    <div style={{ marginTop: '16px' }}>
+                      <div style={{ fontSize: '14px', color: theme.textSecondary, marginBottom: '8px' }}>Peer Testimonials</div>
+                      {data.profile.peerTestimonials.map((testimonial, idx) => (
+                        <div key={idx} style={{
+                          marginBottom: '12px',
+                          padding: '12px',
+                          backgroundColor: theme.hoverBg,
+                          borderRadius: '6px',
+                          border: `1px solid ${theme.borderLight}`
+                        }}>
+                          <div style={{ fontSize: '12px', color: theme.textSecondary, marginBottom: '4px' }}>
+                            From {shortenWallet(testimonial.fromWallet)} • {new Date(testimonial.timestamp).toLocaleDateString()}
+                          </div>
+                          <div style={{ color: theme.text, fontSize: '14px' }}>{testimonial.text}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* System Info */}
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ marginBottom: '8px', color: theme.text }}>
+                    <strong style={{ color: theme.textSecondary }}>Space ID:</strong> {data.profile.spaceId}
+                  </div>
+                  {data.profile.createdAt && (
+                    <div style={{ marginBottom: '8px', color: theme.text }}>
+                      <strong style={{ color: theme.textSecondary }}>Created:</strong> {new Date(data.profile.createdAt).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+
                 <button
                   onClick={() => setEditingProfile(true)}
                   style={{
@@ -504,75 +1195,341 @@ export default function Me() {
                 </button>
               </>
             ) : (
-              <form onSubmit={handleUpdateProfile}>
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ color: theme.text }}>
-                    Display Name:
+              <form onSubmit={handleUpdateProfile} style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '10px' }}>
+                {/* Core Identity Section */}
+                <div style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: `1px solid ${theme.borderLight}` }}>
+                  <h3 style={{ color: theme.text, marginTop: 0, marginBottom: '16px', fontSize: '18px' }}>Core Identity</h3>
+                  
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
+                      Display Name <span style={{ color: theme.errorText }}>*</span>
+                    </label>
                     <input
                       type="text"
                       name="displayName"
                       defaultValue={data.profile.displayName}
                       required
                       style={{ 
-                        marginLeft: '10px',
-                        padding: '6px 10px',
-                        borderRadius: '4px',
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
                         border: `1px solid ${theme.inputBorder}`,
                         backgroundColor: theme.inputBg,
                         color: theme.text,
+                        fontSize: '14px',
                       }}
                     />
-                  </label>
-                </div>
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ color: theme.text }}>
-                    Skills:
+                    <ArkivHelperText darkMode={darkMode} />
+                  </div>
+
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Username</label>
                     <input
                       type="text"
-                      name="skills"
-                      defaultValue={data.profile.skills}
+                      name="username"
+                      defaultValue={data.profile.username || ''}
+                      placeholder="e.g. @alice"
                       style={{ 
-                        marginLeft: '10px',
-                        padding: '6px 10px',
-                        borderRadius: '4px',
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
                         border: `1px solid ${theme.inputBorder}`,
                         backgroundColor: theme.inputBg,
                         color: theme.text,
+                        fontSize: '14px',
                       }}
                     />
-                  </label>
-                </div>
-                <div style={{ marginBottom: '10px' }}>
-                  <label style={{ color: theme.text }}>
-                    Timezone:
+                    <ArkivHelperText darkMode={darkMode} />
+                  </div>
+
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Profile Image URL</label>
+                    <input
+                      type="url"
+                      name="profileImage"
+                      defaultValue={data.profile.profileImage || ''}
+                      placeholder="https://..."
+                      style={{ 
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.inputBorder}`,
+                        backgroundColor: theme.inputBg,
+                        color: theme.text,
+                        fontSize: '14px',
+                      }}
+                    />
+                    <ArkivHelperText darkMode={darkMode} />
+                  </div>
+
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Short Bio</label>
+                    <input
+                      type="text"
+                      name="bioShort"
+                      defaultValue={data.profile.bioShort || data.profile.bio || ''}
+                      placeholder="Brief description"
+                      style={{ 
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.inputBorder}`,
+                        backgroundColor: theme.inputBg,
+                        color: theme.text,
+                        fontSize: '14px',
+                      }}
+                    />
+                    <ArkivHelperText darkMode={darkMode} />
+                  </div>
+
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Long Bio</label>
+                    <textarea
+                      name="bioLong"
+                      defaultValue={data.profile.bioLong || ''}
+                      placeholder="Detailed description"
+                      rows={4}
+                      style={{ 
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.inputBorder}`,
+                        backgroundColor: theme.inputBg,
+                        color: theme.text,
+                        fontSize: '14px',
+                        fontFamily: 'inherit',
+                        resize: 'vertical',
+                      }}
+                    />
+                    <ArkivHelperText darkMode={darkMode} />
+                  </div>
+
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Timezone</label>
                     <input
                       type="text"
                       name="timezone"
                       defaultValue={data.profile.timezone}
+                      placeholder="e.g. UTC-5, America/New_York"
                       style={{ 
-                        marginLeft: '10px',
-                        padding: '6px 10px',
-                        borderRadius: '4px',
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
                         border: `1px solid ${theme.inputBorder}`,
                         backgroundColor: theme.inputBg,
                         color: theme.text,
+                        fontSize: '14px',
                       }}
                     />
-                  </label>
+                    <ArkivHelperText darkMode={darkMode} />
+                  </div>
+
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Languages (comma-separated)</label>
+                    <input
+                      type="text"
+                      name="languages"
+                      defaultValue={data.profile.languages ? data.profile.languages.join(', ') : ''}
+                      placeholder="e.g. English, Spanish, French"
+                      style={{ 
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.inputBorder}`,
+                        backgroundColor: theme.inputBg,
+                        color: theme.text,
+                        fontSize: '14px',
+                      }}
+                    />
+                    <ArkivHelperText darkMode={darkMode} />
+                  </div>
+
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ color: theme.text, display: 'block', marginBottom: '8px' }}>Contact Links</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <input
+                        type="text"
+                        name="contactTwitter"
+                        defaultValue={data.profile.contactLinks?.twitter || ''}
+                        placeholder="Twitter/X handle"
+                        style={{ 
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          border: `1px solid ${theme.inputBorder}`,
+                          backgroundColor: theme.inputBg,
+                          color: theme.text,
+                          fontSize: '14px',
+                        }}
+                      />
+                      <input
+                        type="text"
+                        name="contactGithub"
+                        defaultValue={data.profile.contactLinks?.github || ''}
+                        placeholder="GitHub username"
+                        style={{ 
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          border: `1px solid ${theme.inputBorder}`,
+                          backgroundColor: theme.inputBg,
+                          color: theme.text,
+                          fontSize: '14px',
+                        }}
+                      />
+                      <input
+                        type="text"
+                        name="contactTelegram"
+                        defaultValue={data.profile.contactLinks?.telegram || ''}
+                        placeholder="Telegram handle"
+                        style={{ 
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          border: `1px solid ${theme.inputBorder}`,
+                          backgroundColor: theme.inputBg,
+                          color: theme.text,
+                          fontSize: '14px',
+                        }}
+                      />
+                      <input
+                        type="text"
+                        name="contactDiscord"
+                        defaultValue={data.profile.contactLinks?.discord || ''}
+                        placeholder="Discord username"
+                        style={{ 
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          border: `1px solid ${theme.inputBorder}`,
+                          backgroundColor: theme.inputBg,
+                          color: theme.text,
+                          fontSize: '14px',
+                        }}
+                      />
+                    </div>
+                    <ArkivHelperText darkMode={darkMode} />
+                  </div>
                 </div>
-                <div style={{ marginTop: '10px' }}>
+
+                {/* Skills / Roles Section */}
+                <div style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: `1px solid ${theme.borderLight}` }}>
+                  <h3 style={{ color: theme.text, marginTop: 0, marginBottom: '16px', fontSize: '18px' }}>Skills & Roles</h3>
+                  
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Skills (comma-separated)</label>
+                    <input
+                      type="text"
+                      name="skills"
+                      defaultValue={data.profile.skills || (data.profile.skillsArray ? data.profile.skillsArray.join(', ') : '')}
+                      placeholder="e.g. solidity, react, design"
+                      style={{ 
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.inputBorder}`,
+                        backgroundColor: theme.inputBg,
+                        color: theme.text,
+                        fontSize: '14px',
+                      }}
+                    />
+                    <ArkivHelperText darkMode={darkMode} />
+                  </div>
+
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Seniority Level</label>
+                    <select
+                      name="seniority"
+                      defaultValue={data.profile.seniority || ''}
+                      style={{ 
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.inputBorder}`,
+                        backgroundColor: theme.inputBg,
+                        color: theme.text,
+                        fontSize: '14px',
+                      }}
+                    >
+                      <option value="">Select...</option>
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="advanced">Advanced</option>
+                      <option value="expert">Expert</option>
+                    </select>
+                    <ArkivHelperText darkMode={darkMode} />
+                  </div>
+
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Domains of Interest (comma-separated)</label>
+                    <input
+                      type="text"
+                      name="domainsOfInterest"
+                      defaultValue={data.profile.domainsOfInterest ? data.profile.domainsOfInterest.join(', ') : ''}
+                      placeholder="e.g. AI agents, infra, cryptography, zk, design"
+                      style={{ 
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.inputBorder}`,
+                        backgroundColor: theme.inputBg,
+                        color: theme.text,
+                        fontSize: '14px',
+                      }}
+                    />
+                    <ArkivHelperText darkMode={darkMode} />
+                  </div>
+
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Mentor Roles (comma-separated)</label>
+                    <input
+                      type="text"
+                      name="mentorRoles"
+                      defaultValue={data.profile.mentorRoles ? data.profile.mentorRoles.join(', ') : ''}
+                      placeholder="e.g. technical mentor, product mentor, founder coach"
+                      style={{ 
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.inputBorder}`,
+                        backgroundColor: theme.inputBg,
+                        color: theme.text,
+                        fontSize: '14px',
+                      }}
+                    />
+                    <ArkivHelperText darkMode={darkMode} />
+                  </div>
+
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Learner Roles (comma-separated)</label>
+                    <input
+                      type="text"
+                      name="learnerRoles"
+                      defaultValue={data.profile.learnerRoles ? data.profile.learnerRoles.join(', ') : ''}
+                      placeholder="What you want to learn"
+                      style={{ 
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.inputBorder}`,
+                        backgroundColor: theme.inputBg,
+                        color: theme.text,
+                        fontSize: '14px',
+                      }}
+                    />
+                    <ArkivHelperText darkMode={darkMode} />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
                   <button
                     type="submit"
                     disabled={submitting === 'profile'}
                     style={{
-                      padding: '8px 16px',
+                      padding: '10px 20px',
                       fontSize: '14px',
+                      fontWeight: '500',
                       backgroundColor: submitting === 'profile' ? '#ccc' : '#0066cc',
                       color: 'white',
                       border: 'none',
                       borderRadius: '6px',
                       cursor: submitting === 'profile' ? 'not-allowed' : 'pointer',
-                      marginRight: '10px',
                       transition: 'all 0.2s ease',
                     }}
                   >
@@ -583,8 +1540,9 @@ export default function Me() {
                     onClick={() => setEditingProfile(false)}
                     disabled={submitting === 'profile'}
                     style={{
-                      padding: '8px 16px',
+                      padding: '10px 20px',
                       fontSize: '14px',
+                      fontWeight: '500',
                       backgroundColor: '#6c757d',
                       color: 'white',
                       border: 'none',
@@ -600,65 +1558,302 @@ export default function Me() {
             )}
           </div>
         ) : (
-          <form onSubmit={handleCreateProfile}>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ color: theme.text }}>
-                Display Name:
-                <input 
-                  type="text" 
-                  name="displayName" 
-                  required 
+          <form onSubmit={handleCreateProfile} style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '10px' }}>
+            <p style={{ color: theme.textSecondary, marginBottom: '20px', fontSize: '14px' }}>
+              Create your profile to start participating in the mentorship network. All fields except Display Name are optional.
+            </p>
+
+            {/* Core Identity Section */}
+            <div style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: `1px solid ${theme.borderLight}` }}>
+              <h3 style={{ color: theme.text, marginTop: 0, marginBottom: '16px', fontSize: '18px' }}>Core Identity</h3>
+              
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
+                  Display Name <span style={{ color: theme.errorText }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  name="displayName"
+                  required
                   style={{ 
-                    marginLeft: '10px',
-                    padding: '6px 10px',
-                    borderRadius: '4px',
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
                     border: `1px solid ${theme.inputBorder}`,
                     backgroundColor: theme.inputBg,
                     color: theme.text,
-                  }} 
+                    fontSize: '14px',
+                  }}
                 />
-              </label>
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ color: theme.text }}>
-                Skills:
-                <input 
-                  type="text" 
-                  name="skills" 
+                <ArkivHelperText darkMode={darkMode} />
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Username</label>
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="e.g. @alice"
                   style={{ 
-                    marginLeft: '10px',
-                    padding: '6px 10px',
-                    borderRadius: '4px',
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
                     border: `1px solid ${theme.inputBorder}`,
                     backgroundColor: theme.inputBg,
                     color: theme.text,
-                  }} 
+                    fontSize: '14px',
+                  }}
                 />
-              </label>
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ color: theme.text }}>
-                Timezone:
-                <input 
-                  type="text" 
-                  name="timezone" 
+                <ArkivHelperText darkMode={darkMode} />
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Profile Image URL</label>
+                <input
+                  type="url"
+                  name="profileImage"
+                  placeholder="https://..."
                   style={{ 
-                    marginLeft: '10px',
-                    padding: '6px 10px',
-                    borderRadius: '4px',
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
                     border: `1px solid ${theme.inputBorder}`,
                     backgroundColor: theme.inputBg,
                     color: theme.text,
-                  }} 
+                    fontSize: '14px',
+                  }}
                 />
-              </label>
+                <ArkivHelperText darkMode={darkMode} />
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Short Bio</label>
+                <input
+                  type="text"
+                  name="bioShort"
+                  placeholder="Brief description"
+                  style={{ 
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: `1px solid ${theme.inputBorder}`,
+                    backgroundColor: theme.inputBg,
+                    color: theme.text,
+                    fontSize: '14px',
+                  }}
+                />
+                <ArkivHelperText darkMode={darkMode} />
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Timezone</label>
+                <input
+                  type="text"
+                  name="timezone"
+                  placeholder="e.g. UTC-5, America/New_York"
+                  style={{ 
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: `1px solid ${theme.inputBorder}`,
+                    backgroundColor: theme.inputBg,
+                    color: theme.text,
+                    fontSize: '14px',
+                  }}
+                />
+                <ArkivHelperText darkMode={darkMode} />
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Languages (comma-separated)</label>
+                <input
+                  type="text"
+                  name="languages"
+                  placeholder="e.g. English, Spanish, French"
+                  style={{ 
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: `1px solid ${theme.inputBorder}`,
+                    backgroundColor: theme.inputBg,
+                    color: theme.text,
+                    fontSize: '14px',
+                  }}
+                />
+                <ArkivHelperText darkMode={darkMode} />
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: theme.text, display: 'block', marginBottom: '8px' }}>Contact Links</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <input
+                    type="text"
+                    name="contactTwitter"
+                    placeholder="Twitter/X handle"
+                    style={{ 
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: `1px solid ${theme.inputBorder}`,
+                      backgroundColor: theme.inputBg,
+                      color: theme.text,
+                      fontSize: '14px',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    name="contactGithub"
+                    placeholder="GitHub username"
+                    style={{ 
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: `1px solid ${theme.inputBorder}`,
+                      backgroundColor: theme.inputBg,
+                      color: theme.text,
+                      fontSize: '14px',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    name="contactTelegram"
+                    placeholder="Telegram handle"
+                    style={{ 
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: `1px solid ${theme.inputBorder}`,
+                      backgroundColor: theme.inputBg,
+                      color: theme.text,
+                      fontSize: '14px',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    name="contactDiscord"
+                    placeholder="Discord username"
+                    style={{ 
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: `1px solid ${theme.inputBorder}`,
+                      backgroundColor: theme.inputBg,
+                      color: theme.text,
+                      fontSize: '14px',
+                    }}
+                  />
+                </div>
+                <ArkivHelperText darkMode={darkMode} />
+              </div>
             </div>
+
+            {/* Skills / Roles Section */}
+            <div style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: `1px solid ${theme.borderLight}` }}>
+              <h3 style={{ color: theme.text, marginTop: 0, marginBottom: '16px', fontSize: '18px' }}>Skills & Roles</h3>
+              
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Skills (comma-separated)</label>
+                <input
+                  type="text"
+                  name="skills"
+                  placeholder="e.g. solidity, react, design"
+                  style={{ 
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: `1px solid ${theme.inputBorder}`,
+                    backgroundColor: theme.inputBg,
+                    color: theme.text,
+                    fontSize: '14px',
+                  }}
+                />
+                <ArkivHelperText darkMode={darkMode} />
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Seniority Level</label>
+                <select
+                  name="seniority"
+                  style={{ 
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: `1px solid ${theme.inputBorder}`,
+                    backgroundColor: theme.inputBg,
+                    color: theme.text,
+                    fontSize: '14px',
+                  }}
+                >
+                  <option value="">Select...</option>
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                  <option value="expert">Expert</option>
+                </select>
+                <ArkivHelperText darkMode={darkMode} />
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Domains of Interest (comma-separated)</label>
+                <input
+                  type="text"
+                  name="domainsOfInterest"
+                  placeholder="e.g. AI agents, infra, cryptography, zk, design"
+                  style={{ 
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: `1px solid ${theme.inputBorder}`,
+                    backgroundColor: theme.inputBg,
+                    color: theme.text,
+                    fontSize: '14px',
+                  }}
+                />
+                <ArkivHelperText darkMode={darkMode} />
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Mentor Roles (comma-separated)</label>
+                <input
+                  type="text"
+                  name="mentorRoles"
+                  placeholder="e.g. technical mentor, product mentor, founder coach"
+                  style={{ 
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: `1px solid ${theme.inputBorder}`,
+                    backgroundColor: theme.inputBg,
+                    color: theme.text,
+                    fontSize: '14px',
+                  }}
+                />
+                <ArkivHelperText darkMode={darkMode} />
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>Learner Roles (comma-separated)</label>
+                <input
+                  type="text"
+                  name="learnerRoles"
+                  placeholder="What you want to learn"
+                  style={{ 
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: `1px solid ${theme.inputBorder}`,
+                    backgroundColor: theme.inputBg,
+                    color: theme.text,
+                    fontSize: '14px',
+                  }}
+                />
+                <ArkivHelperText darkMode={darkMode} />
+              </div>
+            </div>
+
             <button 
               type="submit" 
               disabled={submitting === 'profile'}
               style={{
-                padding: '8px 16px',
+                padding: '10px 20px',
                 fontSize: '14px',
+                fontWeight: '500',
                 backgroundColor: submitting === 'profile' ? '#ccc' : '#0066cc',
                 color: 'white',
                 border: 'none',
@@ -670,6 +1865,206 @@ export default function Me() {
               {submitting === 'profile' ? 'Creating...' : 'Create Profile'}
             </button>
           </form>
+        )}
+      </section>
+
+      {/* Activity Summary */}
+      <section style={{ 
+        marginBottom: '40px', 
+        padding: '20px', 
+        border: `1px solid ${theme.border}`, 
+        borderRadius: '8px',
+        backgroundColor: theme.cardBg,
+        boxShadow: theme.shadow,
+        transition: 'all 0.3s ease'
+      }}>
+        <h2 style={{ 
+          color: theme.text,
+          marginTop: 0,
+          marginBottom: '20px',
+          transition: 'color 0.3s ease'
+        }}>
+          Activity Summary
+        </h2>
+        
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+          gap: '16px',
+          marginBottom: '24px'
+        }}>
+          <div style={{ 
+            padding: '16px', 
+            backgroundColor: theme.hoverBg, 
+            borderRadius: '8px',
+            border: `1px solid ${theme.borderLight}`
+          }}>
+            <div style={{ fontSize: '14px', color: theme.textSecondary, marginBottom: '8px' }}>Total Sessions</div>
+            <div style={{ fontSize: '32px', fontWeight: 'bold', color: theme.text }}>{data.sessions.length}</div>
+            <div style={{ fontSize: '12px', color: theme.textTertiary, marginTop: '4px' }}>
+              {data.sessions.filter(s => s.status === 'completed').length} completed
+            </div>
+          </div>
+          
+          <div style={{ 
+            padding: '16px', 
+            backgroundColor: theme.hoverBg, 
+            borderRadius: '8px',
+            border: `1px solid ${theme.borderLight}`
+          }}>
+            <div style={{ fontSize: '14px', color: theme.textSecondary, marginBottom: '8px' }}>As Mentor</div>
+            <div style={{ fontSize: '32px', fontWeight: 'bold', color: theme.text }}>
+              {data.sessions.filter(s => s.mentorWallet === data.wallet).length}
+            </div>
+            <div style={{ fontSize: '12px', color: theme.textTertiary, marginTop: '4px' }}>
+              {data.sessions.filter(s => s.mentorWallet === data.wallet && s.status === 'completed').length} completed
+            </div>
+          </div>
+          
+          <div style={{ 
+            padding: '16px', 
+            backgroundColor: theme.hoverBg, 
+            borderRadius: '8px',
+            border: `1px solid ${theme.borderLight}`
+          }}>
+            <div style={{ fontSize: '14px', color: theme.textSecondary, marginBottom: '8px' }}>As Learner</div>
+            <div style={{ fontSize: '32px', fontWeight: 'bold', color: theme.text }}>
+              {data.sessions.filter(s => s.learnerWallet === data.wallet).length}
+            </div>
+            <div style={{ fontSize: '12px', color: theme.textTertiary, marginTop: '4px' }}>
+              {data.sessions.filter(s => s.learnerWallet === data.wallet && s.status === 'completed').length} completed
+            </div>
+          </div>
+          
+          <div style={{ 
+            padding: '16px', 
+            backgroundColor: theme.hoverBg, 
+            borderRadius: '8px',
+            border: `1px solid ${theme.borderLight}`
+          }}>
+            <div style={{ fontSize: '14px', color: theme.textSecondary, marginBottom: '8px' }}>Feedback Received</div>
+            <div style={{ fontSize: '32px', fontWeight: 'bold', color: theme.text }}>
+              {data.feedback.filter(f => f.toWallet === data.wallet).length}
+            </div>
+            <div style={{ fontSize: '12px', color: theme.textTertiary, marginTop: '4px' }}>
+              Avg: {data.feedback.filter(f => f.toWallet === data.wallet && f.rating).length > 0 
+                ? (data.feedback.filter(f => f.toWallet === data.wallet && f.rating).reduce((sum, f) => sum + (f.rating || 0), 0) / data.feedback.filter(f => f.toWallet === data.wallet && f.rating).length).toFixed(1)
+                : 'N/A'} / 5
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Sessions */}
+        {data.sessions.length > 0 && (
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ color: theme.text, marginTop: 0, marginBottom: '12px', fontSize: '16px' }}>Recent Sessions</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {data.sessions
+                .sort((a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime())
+                .slice(0, 5)
+                .map((session) => (
+                  <div key={session.key} style={{
+                    padding: '12px',
+                    backgroundColor: theme.hoverBg,
+                    borderRadius: '6px',
+                    border: `1px solid ${theme.borderLight}`,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '14px', color: theme.text, fontWeight: '500', marginBottom: '4px' }}>
+                        {session.skill} • {session.mentorWallet === data.wallet ? 'Mentor' : 'Learner'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: theme.textSecondary }}>
+                        {new Date(session.sessionDate).toLocaleString()} • {session.duration || 60} min
+                      </div>
+                    </div>
+                    <div style={{
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      backgroundColor: session.status === 'completed' ? (darkMode ? '#2d4a2d' : '#d4edda') : 
+                                      session.status === 'scheduled' ? (darkMode ? '#2d3a4a' : '#d1ecf1') :
+                                      session.status === 'in-progress' ? (darkMode ? '#4a3d2d' : '#fff3cd') :
+                                      (darkMode ? '#4a2d2d' : '#f8d7da'),
+                      color: session.status === 'completed' ? (darkMode ? '#90ee90' : '#155724') :
+                             session.status === 'scheduled' ? (darkMode ? '#90c7ee' : '#0c5460') :
+                             session.status === 'in-progress' ? (darkMode ? '#ffd700' : '#856404') :
+                             (darkMode ? '#ff6b6b' : '#721c24'),
+                      fontWeight: '500',
+                      textTransform: 'capitalize'
+                    }}>
+                      {session.status}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Feedback */}
+        {data.feedback.length > 0 && (
+          <div>
+            <h3 style={{ color: theme.text, marginTop: 0, marginBottom: '12px', fontSize: '16px' }}>Recent Feedback</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {data.feedback
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .slice(0, 5)
+                .map((feedback) => (
+                  <div key={feedback.key} style={{
+                    padding: '12px',
+                    backgroundColor: theme.hoverBg,
+                    borderRadius: '6px',
+                    border: `1px solid ${theme.borderLight}`
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div>
+                        <div style={{ fontSize: '14px', color: theme.text, fontWeight: '500' }}>
+                          {feedback.role === 'mentor' ? 'Mentor' : 'Learner'} feedback from {shortenWallet(feedback.fromWallet)}
+                        </div>
+                        <div style={{ fontSize: '12px', color: theme.textSecondary }}>
+                          {new Date(feedback.createdAt).toLocaleString()}
+                        </div>
+                      </div>
+                      {feedback.rating && (
+                        <div style={{
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          backgroundColor: darkMode ? '#2d4a2d' : '#d4edda',
+                          color: darkMode ? '#90ee90' : '#155724'
+                        }}>
+                          {feedback.rating}/5
+                        </div>
+                      )}
+                    </div>
+                    {feedback.text && (
+                      <div style={{ fontSize: '14px', color: theme.text, marginTop: '8px' }}>
+                        {feedback.text}
+                      </div>
+                    )}
+                    {feedback.skills && feedback.skills.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px' }}>
+                        {feedback.skills.map((skill, idx) => (
+                          <span key={idx} style={{
+                            padding: '2px 6px',
+                            borderRadius: '3px',
+                            fontSize: '11px',
+                            backgroundColor: theme.cardBg,
+                            color: theme.textSecondary,
+                            border: `1px solid ${theme.borderLight}`
+                          }}>
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          </div>
         )}
       </section>
 
@@ -697,40 +2092,42 @@ export default function Me() {
           border: `1px solid ${theme.borderLight}`
         }}>
           <div style={{ marginBottom: '10px' }}>
-            <label style={{ color: theme.text }}>
+            <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
               Skill:
-              <input 
-                type="text" 
-                name="skill" 
-                required 
-                style={{ 
-                  marginLeft: '10px',
-                  padding: '6px 10px',
-                  borderRadius: '4px',
-                  border: `1px solid ${theme.inputBorder}`,
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                }} 
-              />
             </label>
+            <input 
+              type="text" 
+              name="skill" 
+              required 
+              style={{ 
+                width: '100%',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.inputBorder}`,
+                backgroundColor: theme.inputBg,
+                color: theme.text,
+              }} 
+            />
+            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
-            <label style={{ color: theme.text }}>
+            <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
               Message:
-              <input 
-                type="text" 
-                name="message" 
-                required 
-                style={{ 
-                  marginLeft: '10px',
-                  padding: '6px 10px',
-                  borderRadius: '4px',
-                  border: `1px solid ${theme.inputBorder}`,
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                }} 
-              />
             </label>
+            <input 
+              type="text" 
+              name="message" 
+              required 
+              style={{ 
+                width: '100%',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.inputBorder}`,
+                backgroundColor: theme.inputBg,
+                color: theme.text,
+              }} 
+            />
+            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
             <label style={{ color: theme.text }}>
@@ -893,58 +2290,61 @@ export default function Me() {
           border: `1px solid ${theme.borderLight}`
         }}>
           <div style={{ marginBottom: '10px' }}>
-            <label style={{ color: theme.text }}>
+            <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
               Skill:
-              <input 
-                type="text" 
-                name="skill" 
-                required 
-                style={{ 
-                  marginLeft: '10px',
-                  padding: '6px 10px',
-                  borderRadius: '4px',
-                  border: `1px solid ${theme.inputBorder}`,
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                }} 
-              />
             </label>
+            <input 
+              type="text" 
+              name="skill" 
+              required 
+              style={{ 
+                width: '100%',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.inputBorder}`,
+                backgroundColor: theme.inputBg,
+                color: theme.text,
+              }} 
+            />
+            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
-            <label style={{ color: theme.text }}>
+            <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
               Message:
-              <input 
-                type="text" 
-                name="message" 
-                required 
-                style={{ 
-                  marginLeft: '10px',
-                  padding: '6px 10px',
-                  borderRadius: '4px',
-                  border: `1px solid ${theme.inputBorder}`,
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                }} 
-              />
             </label>
+            <input 
+              type="text" 
+              name="message" 
+              required 
+              style={{ 
+                width: '100%',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.inputBorder}`,
+                backgroundColor: theme.inputBg,
+                color: theme.text,
+              }} 
+            />
+            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
-            <label style={{ color: theme.text }}>
+            <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
               Availability Window:
-              <input 
-                type="text" 
-                name="availabilityWindow" 
-                required 
-                style={{ 
-                  marginLeft: '10px',
-                  padding: '6px 10px',
-                  borderRadius: '4px',
-                  border: `1px solid ${theme.inputBorder}`,
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                }} 
-              />
             </label>
+            <input 
+              type="text" 
+              name="availabilityWindow" 
+              required 
+              style={{ 
+                width: '100%',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.inputBorder}`,
+                backgroundColor: theme.inputBg,
+                color: theme.text,
+              }} 
+            />
+            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
             <label style={{ color: theme.text }}>
@@ -1085,6 +2485,7 @@ export default function Me() {
           )}
         </div>
       </section>
+      </div>
     </main>
   );
 }

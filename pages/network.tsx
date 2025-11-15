@@ -34,6 +34,7 @@ type WebNode = {
   message: string;
   createdAt: string;
   ttlSeconds: number;
+  spaceId: string;
   txHash?: string;
   x: number;
   y: number;
@@ -80,14 +81,27 @@ export default function Network() {
   const router = useRouter();
   const [asks, setAsks] = useState<Ask[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [skillFilter, setSkillFilter] = useState('');
   const [currentFilterSkill, setCurrentFilterSkill] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'asks' | 'offers'>('all');
+  const [nameSearchFilter, setNameSearchFilter] = useState<string>('');
+  const [seniorityFilter, setSeniorityFilter] = useState<string>('');
+  const [mentorRoleFilter, setMentorRoleFilter] = useState<string>('');
+  const [learnerRoleFilter, setLearnerRoleFilter] = useState<string>('');
+  const [minReputationFilter, setMinReputationFilter] = useState<string>('');
+  const [minSessionsFilter, setMinSessionsFilter] = useState<string>('');
+  const [minRatingFilter, setMinRatingFilter] = useState<string>('');
+  const [maxRatingFilter, setMaxRatingFilter] = useState<string>('');
+  const [minNpsFilter, setMinNpsFilter] = useState<string>('');
+  const [ttlFilter, setTtlFilter] = useState<string>(''); // 'active' | 'expiring' | 'all'
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [userWallet, setUserWallet] = useState<string>('');
   const [showAnalytics, setShowAnalytics] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [viewMode, setViewMode] = useState<'matches' | 'skills' | 'wallets' | 'all'>('all');
+  const [focusedNode, setFocusedNode] = useState<string | null>(null);
   const [, setNow] = useState(Date.now());
   const [nodePositions, setNodePositions] = useState<Record<string, { x: number; y: number }>>({});
   const [draggingNode, setDraggingNode] = useState<string | null>(null);
@@ -107,9 +121,25 @@ export default function Network() {
       .catch(err => console.error('Error fetching user profile:', err));
   }, []);
 
-  const fetchNetwork = async (skill?: string) => {
+  const fetchNetwork = async (filters?: {
+    skill?: string;
+    seniority?: string;
+    nameSearch?: string;
+    mentorRole?: string;
+    learnerRole?: string;
+    minReputation?: string;
+    minSessions?: string;
+    minRating?: string;
+    maxRating?: string;
+    minNps?: string;
+    ttl?: string;
+  }) => {
     try {
-      const url = skill ? `/api/network?skill=${encodeURIComponent(skill)}` : '/api/network';
+      const params = new URLSearchParams();
+      if (filters?.skill) params.append('skill', filters.skill);
+      if (filters?.seniority) params.append('seniority', filters.seniority);
+      
+      const url = params.toString() ? `/api/network?${params.toString()}` : '/api/network';
       const res = await fetch(url);
       if (!res.ok) {
         const errorData = await res.json();
@@ -117,9 +147,125 @@ export default function Network() {
         return;
       }
       const data = await res.json();
-      setAsks(data.asks || []);
-      setOffers(data.offers || []);
-      setCurrentFilterSkill(skill || '');
+      
+      // Apply client-side filters
+      let filteredAsks = data.asks || [];
+      let filteredOffers = data.offers || [];
+      let filteredProfiles = data.profiles || [];
+      
+      // TTL filter for asks/offers
+      if (filters?.ttl === 'active') {
+        const now = Date.now();
+        filteredAsks = filteredAsks.filter((ask: Ask) => {
+          const created = new Date(ask.createdAt).getTime();
+          const expires = created + (ask.ttlSeconds * 1000);
+          return expires > now;
+        });
+        filteredOffers = filteredOffers.filter((offer: Offer) => {
+          const created = new Date(offer.createdAt).getTime();
+          const expires = created + (offer.ttlSeconds * 1000);
+          return expires > now;
+        });
+      } else if (filters?.ttl === 'expiring') {
+        const now = Date.now();
+        const oneHour = 60 * 60 * 1000;
+        filteredAsks = filteredAsks.filter((ask: Ask) => {
+          const created = new Date(ask.createdAt).getTime();
+          const expires = created + (ask.ttlSeconds * 1000);
+          const remaining = expires - now;
+          return remaining > 0 && remaining < oneHour;
+        });
+        filteredOffers = filteredOffers.filter((offer: Offer) => {
+          const created = new Date(offer.createdAt).getTime();
+          const expires = created + (offer.ttlSeconds * 1000);
+          const remaining = expires - now;
+          return remaining > 0 && remaining < oneHour;
+        });
+      }
+      
+      // Profile filters (client-side)
+      if (filters?.nameSearch) {
+        const searchLower = filters.nameSearch.toLowerCase();
+        filteredProfiles = filteredProfiles.filter((profile: any) => {
+          const displayName = (profile.displayName || '').toLowerCase();
+          const username = (profile.username || '').toLowerCase();
+          return displayName.includes(searchLower) || username.includes(searchLower);
+        });
+        // Filter asks/offers to only show those from matching profiles
+        const matchingWallets = new Set(filteredProfiles.map((p: any) => p.wallet.toLowerCase()));
+        filteredAsks = filteredAsks.filter((ask: Ask) => matchingWallets.has(ask.wallet.toLowerCase()));
+        filteredOffers = filteredOffers.filter((offer: Offer) => matchingWallets.has(offer.wallet.toLowerCase()));
+      }
+      
+      if (filters?.mentorRole) {
+        filteredProfiles = filteredProfiles.filter((profile: any) => {
+          const mentorRoles = profile.mentorRoles || [];
+          return mentorRoles.some((role: string) => 
+            role.toLowerCase().includes(filters.mentorRole!.toLowerCase())
+          );
+        });
+      }
+      
+      if (filters?.learnerRole) {
+        filteredProfiles = filteredProfiles.filter((profile: any) => {
+          const learnerRoles = profile.learnerRoles || [];
+          return learnerRoles.some((role: string) => 
+            role.toLowerCase().includes(filters.learnerRole!.toLowerCase())
+          );
+        });
+      }
+      
+      if (filters?.minReputation) {
+        const minRep = parseFloat(filters.minReputation);
+        if (!isNaN(minRep)) {
+          filteredProfiles = filteredProfiles.filter((profile: any) => {
+            const repScore = profile.reputationScore || 0;
+            return repScore >= minRep;
+          });
+        }
+      }
+      
+      if (filters?.minSessions) {
+        const minSess = parseInt(filters.minSessions, 10);
+        if (!isNaN(minSess)) {
+          filteredProfiles = filteredProfiles.filter((profile: any) => {
+            const sessions = profile.sessionsCompleted || 0;
+            return sessions >= minSess;
+          });
+        }
+      }
+      
+      if (filters?.minRating || filters?.maxRating) {
+        const minRating = filters.minRating ? parseFloat(filters.minRating) : 0;
+        const maxRating = filters.maxRating ? parseFloat(filters.maxRating) : 5;
+        filteredProfiles = filteredProfiles.filter((profile: any) => {
+          const avgRating = profile.avgRating || 0;
+          return avgRating >= minRating && avgRating <= maxRating;
+        });
+        // Filter asks/offers to only show those from matching profiles
+        const matchingWallets = new Set(filteredProfiles.map((p: any) => p.wallet.toLowerCase()));
+        filteredAsks = filteredAsks.filter((ask: Ask) => matchingWallets.has(ask.wallet.toLowerCase()));
+        filteredOffers = filteredOffers.filter((offer: Offer) => matchingWallets.has(offer.wallet.toLowerCase()));
+      }
+      
+      if (filters?.minNps) {
+        const minNps = parseFloat(filters.minNps);
+        if (!isNaN(minNps)) {
+          filteredProfiles = filteredProfiles.filter((profile: any) => {
+            const npsScore = profile.npsScore || 0;
+            return npsScore >= minNps;
+          });
+          // Filter asks/offers to only show those from matching profiles
+          const matchingWallets = new Set(filteredProfiles.map((p: any) => p.wallet.toLowerCase()));
+          filteredAsks = filteredAsks.filter((ask: Ask) => matchingWallets.has(ask.wallet.toLowerCase()));
+          filteredOffers = filteredOffers.filter((offer: Offer) => matchingWallets.has(offer.wallet.toLowerCase()));
+        }
+      }
+      
+      setAsks(filteredAsks);
+      setOffers(filteredOffers);
+      setProfiles(filteredProfiles);
+      setCurrentFilterSkill(filters?.skill || '');
     } catch (err) {
       console.error('Error fetching /api/network:', err);
     } finally {
@@ -137,6 +283,18 @@ export default function Network() {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Set body background to match theme
+  useEffect(() => {
+    document.body.style.backgroundColor = darkMode ? '#1a1a1a' : '#f8f9fa';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    return () => {
+      document.body.style.backgroundColor = '';
+      document.body.style.margin = '';
+      document.body.style.padding = '';
+    };
+  }, [darkMode]);
 
   useEffect(() => {
     console.log('[Network] Setting up SSE connection...');
@@ -187,7 +345,19 @@ export default function Network() {
 
   const handleApplyFilter = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchNetwork(skillFilter || undefined);
+    fetchNetwork({
+      skill: skillFilter || undefined,
+      seniority: seniorityFilter || undefined,
+      nameSearch: nameSearchFilter || undefined,
+      mentorRole: mentorRoleFilter || undefined,
+      learnerRole: learnerRoleFilter || undefined,
+      minReputation: minReputationFilter || undefined,
+      minSessions: minSessionsFilter || undefined,
+      minRating: minRatingFilter || undefined,
+      maxRating: maxRatingFilter || undefined,
+      minNps: minNpsFilter || undefined,
+      ttl: ttlFilter || undefined,
+    });
   };
 
   // Compute relevance score for a node
@@ -224,6 +394,7 @@ export default function Network() {
         message: a.message,
         createdAt: a.createdAt,
         ttlSeconds: a.ttlSeconds,
+        spaceId: a.spaceId,
         txHash: a.txHash,
         x: 0,
         y: 0,
@@ -237,6 +408,7 @@ export default function Network() {
         message: o.message,
         createdAt: o.createdAt,
         ttlSeconds: o.ttlSeconds,
+        spaceId: o.spaceId,
         txHash: o.txHash,
         x: 0,
         y: 0,
@@ -382,6 +554,46 @@ export default function Network() {
     }
   }, [draggingNode, dragOffset]);
 
+  // Compute match score between an ask and offer (from spec)
+  const computeMatchScore = (ask: WebNode, offer: WebNode): number => {
+    // Must be ask + offer, different wallets, same spaceId
+    if (ask.type === offer.type || ask.wallet === offer.wallet) return 0;
+    if (ask.spaceId !== offer.spaceId) return 0;
+
+    let score = 0;
+
+    // 1. Skill fit (up to 0.5)
+    const askSkill = ask.skill.toLowerCase();
+    const offerSkill = offer.skill.toLowerCase();
+    if (askSkill === offerSkill) {
+      score += 0.5;
+    } else if (askSkill.includes(offerSkill) || offerSkill.includes(askSkill)) {
+      score += 0.3; // Fuzzy match
+    }
+
+    // 2. Time fit (up to 0.3) - TTL overlap
+    const now = Date.now();
+    const askCreated = new Date(ask.createdAt).getTime();
+    const offerCreated = new Date(offer.createdAt).getTime();
+    const askExpires = askCreated + (ask.ttlSeconds * 1000);
+    const offerExpires = offerCreated + (offer.ttlSeconds * 1000);
+    const askMinutesLeft = Math.max(0, (askExpires - now) / (1000 * 60));
+    const offerMinutesLeft = Math.max(0, (offerExpires - now) / (1000 * 60));
+    const overlap = Math.min(askMinutesLeft, offerMinutesLeft);
+    // Map overlap to 0-0.3 (up to 60 minutes = 0.3)
+    score += Math.min(0.3, (overlap / 60) * 0.3);
+
+    // 3. Recency (up to 0.2) - posted around same time
+    const ageDiffMinutes = Math.abs(askCreated - offerCreated) / (1000 * 60);
+    if (ageDiffMinutes < 30) {
+      score += 0.2;
+    } else if (ageDiffMinutes < 120) {
+      score += 0.1;
+    }
+
+    return Math.min(1, score);
+  };
+
   // Compute Arkiv-based connections
   const computeConnections = () => {
     const connections: Array<{
@@ -390,12 +602,13 @@ export default function Network() {
       type: 'skill' | 'wallet' | 'match';
       fromPos: { x: number; y: number };
       toPos: { x: number; y: number };
+      score?: number; // Match score for match edges
     }> = [];
 
     displayedNodes.forEach((node) => {
       const nodePos = getNodePosition(node.id, node.x, node.y);
       
-      // Skill-based connections (same skill) - always show
+      // Skill-based connections (same skill)
       displayedNodes.forEach((target) => {
         if (target.id === node.id) return;
         if (node.skill.toLowerCase() === target.skill.toLowerCase()) {
@@ -410,35 +623,38 @@ export default function Network() {
         }
       });
 
-      // Wallet-based connections (same wallet - entities from same contributor) - always show
-      displayedNodes.forEach((target) => {
-        if (target.id === node.id) return;
-        if (node.wallet === target.wallet && node.wallet !== userWallet) {
-          const targetPos = getNodePosition(target.id, target.x, target.y);
-          connections.push({
-            from: node.id,
-            to: target.id,
-            type: 'wallet',
-            fromPos: nodePos,
-            toPos: targetPos,
-          });
-        }
-      });
+      // Wallet-based connections (same wallet - entities from same contributor)
+      // DISABLED: All entities are from same wallet, so this creates too much clutter
+      // displayedNodes.forEach((target) => {
+      //   if (target.id === node.id) return;
+      //   if (node.wallet === target.wallet) {
+      //     const targetPos = getNodePosition(target.id, target.x, target.y);
+      //     connections.push({
+      //       from: node.id,
+      //       to: target.id,
+      //       type: 'wallet',
+      //       fromPos: nodePos,
+      //       toPos: targetPos,
+      //     });
+      //   }
+      // });
 
-      // Match connections (ask + offer with same skill - potential mentorship matches) - always show
+      // Match connections (ask + offer with match scoring)
       if (node.type === 'ask') {
         displayedNodes.forEach((target) => {
-          if (target.type === 'offer' && 
-              node.skill.toLowerCase() === target.skill.toLowerCase() &&
-              node.wallet !== target.wallet) {
-            const targetPos = getNodePosition(target.id, target.x, target.y);
-            connections.push({
-              from: node.id,
-              to: target.id,
-              type: 'match',
-              fromPos: nodePos,
-              toPos: targetPos,
-            });
+          if (target.type === 'offer' && node.wallet !== target.wallet) {
+            const matchScore = computeMatchScore(node, target);
+            if (matchScore > 0.2) { // Only show matches with score > 0.2
+              const targetPos = getNodePosition(target.id, target.x, target.y);
+              connections.push({
+                from: node.id,
+                to: target.id,
+                type: 'match',
+                fromPos: nodePos,
+                toPos: targetPos,
+                score: matchScore,
+              });
+            }
           }
         });
       }
@@ -454,7 +670,32 @@ export default function Network() {
     });
   };
 
-  const connections = computeConnections();
+  const allConnections = computeConnections();
+  
+  // Filter connections by view mode
+  const connections = allConnections.filter(conn => {
+    if (viewMode === 'all') return true;
+    if (viewMode === 'matches') return conn.type === 'match';
+    if (viewMode === 'skills') return conn.type === 'skill';
+    if (viewMode === 'wallets') return conn.type === 'wallet';
+    return true;
+  });
+  
+  // Filter connections by focus mode
+  const filteredConnections = focusedNode 
+    ? connections.filter(conn => conn.from === focusedNode || conn.to === focusedNode)
+    : connections;
+  
+  // Determine node opacity based on focus
+  const getNodeOpacity = (nodeId: string): number => {
+    if (!focusedNode) return 1;
+    if (nodeId === focusedNode) return 1;
+    const isNeighbor = filteredConnections.some(conn => 
+      (conn.from === focusedNode && conn.to === nodeId) || 
+      (conn.to === focusedNode && conn.from === nodeId)
+    );
+    return isNeighbor ? 0.7 : 0.3;
+  };
 
   // Compute summary stats
   const totalAsks = asks.length;
@@ -501,10 +742,15 @@ export default function Network() {
   if (loading) {
     return (
       <main style={{ 
-        padding: '40px 20px', 
         minHeight: '100vh',
         backgroundColor: theme.bg,
-        transition: 'background-color 0.3s ease'
+        transition: 'background-color 0.3s ease',
+        width: '100%',
+        margin: 0,
+        padding: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}>
         <div style={{ textAlign: 'center', color: theme.textSecondary, fontSize: '16px' }}>Loading network data...</div>
       </main>
@@ -513,22 +759,29 @@ export default function Network() {
 
   return (
     <main style={{ 
-      padding: '32px 24px', 
       minHeight: '100vh',
       backgroundColor: theme.bg,
-      maxWidth: '1600px',
-      margin: '0 auto',
-      transition: 'background-color 0.3s ease'
+      transition: 'background-color 0.3s ease',
+      width: '100%',
+      margin: 0,
+      padding: 0,
     }}>
-      {/* Header */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '32px',
-        paddingBottom: '24px',
-        borderBottom: `2px solid ${theme.borderLight}`
+      <div style={{
+        maxWidth: '1600px',
+        margin: '0 auto',
+        padding: 'clamp(16px, 4vw, 32px) clamp(16px, 3vw, 24px)',
+        width: '100%',
+        boxSizing: 'border-box',
       }}>
+        {/* Header */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '32px',
+          paddingBottom: '24px',
+          borderBottom: `2px solid ${theme.borderLight}`
+        }}>
         <div>
           <h1 style={{ 
             margin: 0, 
@@ -643,78 +896,366 @@ export default function Network() {
         boxShadow: theme.shadow,
         transition: 'all 0.3s ease'
       }}>
-        <form onSubmit={handleApplyFilter} style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '14px', fontWeight: '500', color: theme.text }}>Skill:</span>
-            <input
-              type="text"
-              value={skillFilter}
-              onChange={(e) => setSkillFilter(e.target.value)}
-              placeholder="e.g. solidity"
+        <h3 style={{ 
+          marginTop: 0, 
+          marginBottom: '16px', 
+          fontSize: '16px', 
+          fontWeight: '600', 
+          color: theme.text 
+        }}>
+          Filters
+        </h3>
+        <form onSubmit={handleApplyFilter}>
+          {/* Row 1: Basic Filters */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Skill</span>
+              <input
+                type="text"
+                value={skillFilter}
+                onChange={(e) => setSkillFilter(e.target.value)}
+                placeholder="e.g. solidity"
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              />
+            </label>
+            
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Name / Username</span>
+              <input
+                type="text"
+                value={nameSearchFilter}
+                onChange={(e) => setNameSearchFilter(e.target.value)}
+                placeholder="Search by name or username"
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              />
+            </label>
+            
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Seniority</span>
+              <select
+                value={seniorityFilter}
+                onChange={(e) => setSeniorityFilter(e.target.value)}
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  fontSize: '14px',
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              >
+                <option value="">All</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+                <option value="expert">Expert</option>
+              </select>
+            </label>
+            
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Type</span>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as 'all' | 'asks' | 'offers')}
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  fontSize: '14px',
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              >
+                <option value="all">All</option>
+                <option value="asks">Asks</option>
+                <option value="offers">Offers</option>
+              </select>
+            </label>
+            
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Availability (TTL)</span>
+              <select
+                value={ttlFilter}
+                onChange={(e) => setTtlFilter(e.target.value)}
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  fontSize: '14px',
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              >
+                <option value="">All</option>
+                <option value="active">Active</option>
+                <option value="expiring">Expiring Soon (&lt;1h)</option>
+              </select>
+            </label>
+          </div>
+          
+          {/* Row 2: Role & Reputation Filters */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Mentor Role</span>
+              <input
+                type="text"
+                value={mentorRoleFilter}
+                onChange={(e) => setMentorRoleFilter(e.target.value)}
+                placeholder="e.g. technical mentor"
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              />
+            </label>
+            
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Learner Role</span>
+              <input
+                type="text"
+                value={learnerRoleFilter}
+                onChange={(e) => setLearnerRoleFilter(e.target.value)}
+                placeholder="e.g. product manager"
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              />
+            </label>
+            
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Min Reputation Score</span>
+              <input
+                type="number"
+                value={minReputationFilter}
+                onChange={(e) => setMinReputationFilter(e.target.value)}
+                placeholder="e.g. 50"
+                min="0"
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              />
+            </label>
+            
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Min Sessions</span>
+              <input
+                type="number"
+                value={minSessionsFilter}
+                onChange={(e) => setMinSessionsFilter(e.target.value)}
+                placeholder="e.g. 5"
+                min="0"
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              />
+            </label>
+          </div>
+          
+          {/* Row 3: Rating Range Filter */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Min Rating (1-5)</span>
+              <input
+                type="number"
+                value={minRatingFilter}
+                onChange={(e) => setMinRatingFilter(e.target.value)}
+                placeholder="e.g. 3.0"
+                min="0"
+                max="5"
+                step="0.1"
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              />
+            </label>
+            
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Max Rating (1-5)</span>
+              <input
+                type="number"
+                value={maxRatingFilter}
+                onChange={(e) => setMaxRatingFilter(e.target.value)}
+                placeholder="e.g. 5.0"
+                min="0"
+                max="5"
+                step="0.1"
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              />
+            </label>
+            
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Min NPS Score (0-10)</span>
+              <input
+                type="number"
+                value={minNpsFilter}
+                onChange={(e) => setMinNpsFilter(e.target.value)}
+                placeholder="e.g. 7"
+                min="0"
+                max="10"
+                step="1"
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              />
+            </label>
+          </div>
+          
+          {/* Submit Button */}
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button 
+              type="submit" 
               style={{ 
-                padding: '8px 12px', 
+                padding: '10px 24px', 
+                backgroundColor: '#0066cc', 
+                color: 'white', 
+                border: 'none', 
                 borderRadius: '6px', 
-                border: `1px solid ${theme.inputBorder}`,
-                backgroundColor: theme.inputBg,
-                color: theme.text,
-                fontSize: '14px',
-                width: '180px',
-                transition: 'all 0.2s',
-              }}
-              onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
-              onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
-            />
-          </label>
-          <button 
-            type="submit" 
-            style={{ 
-              padding: '8px 20px', 
-              backgroundColor: '#0066cc', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '6px', 
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              boxShadow: '0 1px 3px rgba(0, 102, 204, 0.3)',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#0052a3';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 102, 204, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#0066cc';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 102, 204, 0.3)';
-            }}
-          >
-            Apply
-          </button>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '8px' }}>
-            <span style={{ fontSize: '14px', fontWeight: '500', color: theme.text }}>Type:</span>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'asks' | 'offers')}
-              style={{ 
-                padding: '8px 12px', 
-                borderRadius: '6px', 
-                border: `1px solid ${theme.inputBorder}`,
-                fontSize: '14px',
-                backgroundColor: theme.inputBg,
-                color: theme.text,
                 cursor: 'pointer',
-                transition: 'border-color 0.2s',
+                fontSize: '14px',
+                fontWeight: '500',
+                boxShadow: '0 1px 3px rgba(0, 102, 204, 0.3)',
+                transition: 'all 0.2s ease',
               }}
-              onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
-              onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#0052a3';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 102, 204, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#0066cc';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 102, 204, 0.3)';
+              }}
             >
-              <option value="all">All</option>
-              <option value="asks">Asks</option>
-              <option value="offers">Offers</option>
-            </select>
-          </label>
+              Apply Filters
+            </button>
+            <button 
+              type="button"
+              onClick={() => {
+                setSkillFilter('');
+                setNameSearchFilter('');
+                setSeniorityFilter('');
+                setMentorRoleFilter('');
+                setLearnerRoleFilter('');
+                setMinReputationFilter('');
+                setMinSessionsFilter('');
+                setMinRatingFilter('');
+                setMaxRatingFilter('');
+                setMinNpsFilter('');
+                setTtlFilter('');
+                setTypeFilter('all');
+                fetchNetwork();
+              }}
+              style={{ 
+                padding: '10px 24px', 
+                backgroundColor: theme.hoverBg, 
+                color: theme.text, 
+                border: `1px solid ${theme.border}`, 
+                borderRadius: '6px', 
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = darkMode ? '#4a4a4a' : '#e0e0e0';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = theme.hoverBg;
+              }}
+            >
+              Clear All
+            </button>
+          </div>
         </form>
       </section>
 
@@ -736,25 +1277,65 @@ export default function Network() {
             <div style={{ 
               marginBottom: '16px',
               paddingBottom: '16px',
-              borderBottom: `1px solid ${theme.borderLight}`
+              borderBottom: `1px solid ${theme.borderLight}`,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
             }}>
-              <h2 style={{ 
-                margin: 0,
-                fontSize: '20px',
-                fontWeight: '600',
-                color: theme.text,
-                transition: 'color 0.3s ease'
-              }}>
-                Network Web
-              </h2>
-              <p style={{ 
-                margin: '4px 0 0 0',
-                fontSize: '13px',
-                color: theme.textSecondary,
-                transition: 'color 0.3s ease'
-              }}>
-                Drag nodes to explore • Blue: same skill • Purple: same wallet • Green dashed: potential matches
-              </p>
+              <div>
+                <h2 style={{ 
+                  margin: 0,
+                  fontSize: '20px',
+                  fontWeight: '600',
+                  color: theme.text,
+                  transition: 'color 0.3s ease'
+                }}>
+                  Network Web
+                </h2>
+                <p style={{ 
+                  margin: '4px 0 0 0',
+                  fontSize: '13px',
+                  color: theme.textSecondary,
+                  transition: 'color 0.3s ease'
+                }}>
+                  Drag nodes to explore • Click to focus • Blue: same skill • Purple: same wallet • Green: matches
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {(['all', 'matches', 'skills', 'wallets'] as const).map(mode => (
+                  <button
+                    key={mode}
+                    onClick={() => {
+                      setViewMode(mode);
+                      if (mode !== 'all') setFocusedNode(null);
+                    }}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      borderRadius: '6px',
+                      border: `1px solid ${viewMode === mode ? '#0066cc' : theme.border}`,
+                      backgroundColor: viewMode === mode ? '#0066cc' : theme.hoverBg,
+                      color: viewMode === mode ? 'white' : theme.text,
+                      cursor: 'pointer',
+                      textTransform: 'capitalize',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (viewMode !== mode) {
+                        e.currentTarget.style.backgroundColor = darkMode ? '#404040' : '#e9ecef';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (viewMode !== mode) {
+                        e.currentTarget.style.backgroundColor = theme.hoverBg;
+                      }
+                    }}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
             </div>
             <svg 
               width="100%" 
@@ -768,24 +1349,32 @@ export default function Network() {
               }}
             >
               {/* Draw Arkiv-based connections */}
-              {connections.map((conn, idx) => {
+              {filteredConnections.map((conn, idx) => {
                 let strokeColor = 'rgba(0, 102, 204, 0.15)';
                 let strokeWidth = 1.5;
                 let strokeDasharray = 'none';
+                let opacity = 1;
                 
                 if (conn.type === 'match') {
-                  // Potential mentorship matches (ask + offer)
-                  strokeColor = 'rgba(76, 175, 80, 0.4)';
-                  strokeWidth = 2.5;
-                  strokeDasharray = '5,5';
+                  // Potential mentorship matches (ask + offer) - use score for opacity/thickness
+                  const score = conn.score || 0;
+                  opacity = Math.max(0.2, score); // Opacity based on score
+                  strokeWidth = 1 + (score * 2); // Thickness based on score (1-3px)
+                  strokeColor = `rgba(76, 175, 80, ${opacity})`;
+                  strokeDasharray = score > 0.7 ? 'none' : '5,5'; // Solid for high scores, dashed for low
                 } else if (conn.type === 'wallet') {
-                  // Same wallet (same contributor)
+                  // Same wallet (same contributor) - purple
                   strokeColor = 'rgba(156, 39, 176, 0.25)';
                   strokeWidth = 2;
                 } else {
-                  // Same skill
+                  // Same skill - blue
                   strokeColor = 'rgba(0, 102, 204, 0.2)';
                   strokeWidth = 1.5;
+                }
+                
+                // Dim edges not connected to focused node
+                if (focusedNode && conn.from !== focusedNode && conn.to !== focusedNode) {
+                  opacity = 0.1;
                 }
                 
                 return (
@@ -798,6 +1387,7 @@ export default function Network() {
                     stroke={strokeColor}
                     strokeWidth={strokeWidth}
                     strokeDasharray={strokeDasharray}
+                    opacity={opacity}
                   />
                 );
               })}
@@ -813,12 +1403,20 @@ export default function Network() {
                 marginTop: '16px',
                 cursor: draggingNode ? 'grabbing' : 'default'
               }}
+              onMouseDown={(e) => {
+                // Only clear focus if clicking directly on container (not on a node)
+                if (e.target === e.currentTarget) {
+                  setFocusedNode(null);
+                }
+              }}
               onMouseMove={handleDrag}
               onMouseUp={handleDragEnd}
             >
               {displayedNodes.slice(0, 50).map((node) => {
                 const nodePos = getNodePosition(node.id, node.x, node.y);
                 const isDragging = draggingNode === node.id;
+                const nodeOpacity = getNodeOpacity(node.id);
+                const isFocused = focusedNode === node.id;
                 
                 return (
                   <div
@@ -830,22 +1428,33 @@ export default function Network() {
                       transform: 'translate(-50%, -50%)',
                       width: '160px',
                       padding: '12px',
-                    backgroundColor: darkMode 
-                      ? (node.type === 'ask' ? '#3a2525' : '#253a25')
-                      : (node.type === 'ask' ? '#fff5f5' : '#f0f9f4'),
-                    border: `2px solid ${node.type === 'ask' ? '#ef5350' : '#4caf50'}`,
-                    borderRadius: '10px',
-                    cursor: isDragging ? 'grabbing' : 'grab',
-                    boxShadow: isDragging 
-                        ? (darkMode ? '0 8px 24px rgba(0,0,0,0.6)' : '0 8px 24px rgba(0,0,0,0.25)')
-                        : (darkMode ? '0 2px 8px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.12)'),
+                      backgroundColor: darkMode 
+                        ? (node.type === 'ask' ? '#3a2525' : '#253a25')
+                        : (node.type === 'ask' ? '#fff5f5' : '#f0f9f4'),
+                      border: `2px solid ${isFocused ? '#0066cc' : (node.type === 'ask' ? '#ef5350' : '#4caf50')}`,
+                      borderRadius: '10px',
+                      cursor: isDragging ? 'grabbing' : 'grab',
+                      boxShadow: isFocused 
+                        ? (darkMode ? '0 0 20px rgba(0, 102, 204, 0.6)' : '0 0 20px rgba(0, 102, 204, 0.4)')
+                        : isDragging 
+                          ? (darkMode ? '0 8px 24px rgba(0,0,0,0.6)' : '0 8px 24px rgba(0,0,0,0.25)')
+                          : (darkMode ? '0 2px 8px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.12)'),
                       fontSize: '12px',
-                      transition: isDragging ? 'none' : 'box-shadow 0.2s ease',
-                      zIndex: isDragging ? 100 : 1,
+                      transition: isDragging ? 'none' : 'all 0.2s ease',
+                      zIndex: isFocused ? 50 : (isDragging ? 100 : 1),
                       userSelect: 'none',
+                      opacity: nodeOpacity,
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFocusedNode(focusedNode === node.id ? null : node.id);
                     }}
                     onMouseDown={(e) => {
-                      handleDragStart(e, node.id, nodePos.x, nodePos.y);
+                      // Only start drag on right mouse button or if not clicking
+                      if (e.button === 0) {
+                        // Left click - allow both drag and focus
+                        handleDragStart(e, node.id, nodePos.x, nodePos.y);
+                      }
                     }}
                     onMouseEnter={(e) => {
                       if (!isDragging) {
@@ -1007,7 +1616,173 @@ export default function Network() {
               </div>
             </div>
 
-            {/* Skill Counts */}
+            {/* Skill Supply vs Demand */}
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ 
+                fontSize: '16px', 
+                marginBottom: '16px',
+                fontWeight: '600',
+                color: theme.text,
+                transition: 'color 0.3s ease'
+              }}>
+                Skill Supply vs Demand
+              </h3>
+              <div style={{ maxHeight: '400px', overflowY: 'auto', fontSize: '13px' }}>
+                {Object.entries(skillCounts)
+                  .sort((a, b) => {
+                    // Sort by bottleneck severity (demand - supply), then by total activity
+                    const aCounts = a[1];
+                    const bCounts = b[1];
+                    const aImbalance = aCounts.asks - aCounts.offers;
+                    const bImbalance = bCounts.asks - bCounts.offers;
+                    if (Math.abs(aImbalance) !== Math.abs(bImbalance)) {
+                      return Math.abs(bImbalance) - Math.abs(aImbalance);
+                    }
+                    const aTotal = aCounts.asks + aCounts.offers;
+                    const bTotal = bCounts.asks + bCounts.offers;
+                    return bTotal - aTotal;
+                  })
+                  .map(([skill, counts]) => {
+                    const total = counts.asks + counts.offers;
+                    const demandRatio = total > 0 ? counts.asks / total : 0;
+                    const supplyRatio = total > 0 ? counts.offers / total : 0;
+                    const imbalance = counts.asks - counts.offers;
+                    const isBottleneck = imbalance > 0;
+                    const isSurplus = imbalance < 0;
+                    
+                    return (
+                      <div 
+                        key={skill} 
+                        style={{ 
+                          marginBottom: '12px', 
+                          padding: '14px', 
+                          backgroundColor: theme.hoverBg, 
+                          borderRadius: '8px',
+                          border: `1px solid ${isBottleneck ? '#ef5350' : isSurplus ? '#4caf50' : theme.borderLight}`,
+                          borderLeft: `4px solid ${isBottleneck ? '#ef5350' : isSurplus ? '#4caf50' : theme.border}`,
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = darkMode ? '#404040' : '#e9ecef';
+                          e.currentTarget.style.borderColor = theme.border;
+                          e.currentTarget.style.boxShadow = theme.shadow;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = theme.hoverBg;
+                          e.currentTarget.style.borderColor = isBottleneck ? '#ef5350' : isSurplus ? '#4caf50' : theme.borderLight;
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      >
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          marginBottom: '8px'
+                        }}>
+                          <div style={{ fontWeight: '600', color: theme.text, fontSize: '14px' }}>
+                            {skill}
+                          </div>
+                          {isBottleneck && (
+                            <span style={{ 
+                              fontSize: '11px', 
+                              fontWeight: '600',
+                              color: '#ef5350',
+                              backgroundColor: darkMode ? '#4a2525' : '#ffebee',
+                              padding: '2px 8px',
+                              borderRadius: '4px'
+                            }}>
+                              ⚠️ Bottleneck
+                            </span>
+                          )}
+                          {isSurplus && (
+                            <span style={{ 
+                              fontSize: '11px', 
+                              fontWeight: '600',
+                              color: '#4caf50',
+                              backgroundColor: darkMode ? '#1a3a1a' : '#e8f5e9',
+                              padding: '2px 8px',
+                              borderRadius: '4px'
+                            }}>
+                              ✓ Surplus
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Visual bars */}
+                        <div style={{ marginBottom: '8px' }}>
+                          <div style={{ 
+                            display: 'flex', 
+                            gap: '4px',
+                            marginBottom: '4px',
+                            fontSize: '11px',
+                            color: theme.textSecondary
+                          }}>
+                            <span style={{ flex: 1 }}>Demand (Asks)</span>
+                            <span style={{ flex: 1, textAlign: 'right' }}>Supply (Offers)</span>
+                          </div>
+                          <div style={{ 
+                            display: 'flex', 
+                            height: '20px',
+                            borderRadius: '4px',
+                            overflow: 'hidden',
+                            border: `1px solid ${theme.borderLight}`
+                          }}>
+                            <div style={{ 
+                              flex: demandRatio || 0.01,
+                              backgroundColor: '#ef5350',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#ffffff',
+                              fontSize: '10px',
+                              fontWeight: '600',
+                              minWidth: counts.asks > 0 ? '20px' : '0'
+                            }}>
+                              {counts.asks > 0 && counts.asks}
+                            </div>
+                            <div style={{ 
+                              flex: supplyRatio || 0.01,
+                              backgroundColor: '#4caf50',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#ffffff',
+                              fontSize: '10px',
+                              fontWeight: '600',
+                              minWidth: counts.offers > 0 ? '20px' : '0'
+                            }}>
+                              {counts.offers > 0 && counts.offers}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Summary */}
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between',
+                          fontSize: '12px',
+                          color: theme.textSecondary
+                        }}>
+                          <span>
+                            {counts.asks} ask{counts.asks !== 1 ? 's' : ''}
+                          </span>
+                          <span>
+                            {counts.offers} offer{counts.offers !== 1 ? 's' : ''}
+                          </span>
+                          <span style={{ 
+                            fontWeight: '600',
+                            color: isBottleneck ? '#ef5350' : isSurplus ? '#4caf50' : theme.textSecondary
+                          }}>
+                            {Math.abs(imbalance)} {isBottleneck ? 'more needed' : isSurplus ? 'available' : 'balanced'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+            
+            {/* Top Skills (simplified) */}
             <div style={{ marginBottom: '20px' }}>
               <h3 style={{ 
                 fontSize: '16px', 
@@ -1114,7 +1889,7 @@ export default function Network() {
                       fontSize: '16px',
                       fontWeight: '600'
                     }}>
-                      🔴 Ask — {ask.skill || 'Unknown'}
+                      🔴 Ask. {ask.skill || 'Unknown'}
                     </strong>
                   </div>
                   <div style={{ 
@@ -1243,7 +2018,7 @@ export default function Network() {
                       fontSize: '16px',
                       fontWeight: '600'
                     }}>
-                      🟢 Offer — {offer.skill || 'Unknown'}
+                      🟢 Offer. {offer.skill || 'Unknown'}
                     </strong>
                   </div>
                   <div style={{ 
@@ -1320,6 +2095,7 @@ export default function Network() {
             </div>
           </section>
         )}
+      </div>
       </div>
     </main>
   );

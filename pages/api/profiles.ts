@@ -1,24 +1,32 @@
 import { createUserProfile, listUserProfilesForWallet } from "../../src/arkiv/profiles"
-import { CURRENT_WALLET, ARKIV_PRIVATE_KEY } from "../../src/config"
+import { CURRENT_WALLET, getPrivateKey } from "../../src/config"
 
 export default async function handler(req: any, res: any) {
   try {
     if (req.method === 'GET') {
-      const profiles = await listUserProfilesForWallet(CURRENT_WALLET);
+      const wallet = CURRENT_WALLET || '';
+      if (!wallet) {
+        return res.status(400).json({ error: 'No wallet configured' });
+      }
+      const profiles = await listUserProfilesForWallet(wallet);
       res.json(profiles);
     } else if (req.method === 'POST') {
-      const { displayName, skills, timezone } = req.body;
+      const { displayName, skills, timezone, wallet: requestWallet } = req.body;
+      const wallet = requestWallet || CURRENT_WALLET || '';
       
+      if (!wallet) {
+        return res.status(400).json({ error: 'No wallet address provided' });
+      }
       if (!displayName) {
         return res.status(400).json({ error: 'displayName is required' });
       }
 
       const { key, txHash } = await createUserProfile({
-        wallet: CURRENT_WALLET,
+        wallet,
         displayName,
         skills: skills || '',
         timezone: timezone || '',
-        privateKey: ARKIV_PRIVATE_KEY,
+        privateKey: getPrivateKey(),
       });
 
       res.json({ key, txHash });

@@ -16,8 +16,10 @@
     "typescript": "^5.7.2"
   },
   "scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "seed": "npx tsx scripts/seedDummyData.ts",
+    "seed:simple": "npx tsx scripts/seedSimple.ts"
   }
 }
