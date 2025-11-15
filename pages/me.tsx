@@ -18,6 +18,7 @@ type Ask = {
   createdAt: string;
   status: string;
   message: string;
+  ttlSeconds: number;
 };
 
 type Offer = {
@@ -29,6 +30,7 @@ type Offer = {
   status: string;
   message: string;
   availabilityWindow: string;
+  ttlSeconds: number;
 };
 
 type MeData = {
@@ -38,11 +40,35 @@ type MeData = {
   offers: Offer[];
 };
 
+function formatTimeRemaining(createdAt: string, ttlSeconds: number): string {
+  const created = new Date(createdAt).getTime();
+  const expires = created + (ttlSeconds * 1000);
+  const now = Date.now();
+  const remaining = expires - now;
+
+  if (remaining <= 0) {
+    return '⏰ Expired';
+  }
+
+  const hours = Math.floor(remaining / (1000 * 60 * 60));
+  const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+  if (hours > 0) {
+    return `⏰ ${hours}h ${minutes}m remaining`;
+  } else if (minutes > 0) {
+    return `⏰ ${minutes}m ${seconds}s remaining`;
+  } else {
+    return `⏰ ${seconds}s remaining`;
+  }
+}
+
 export default function Me() {
   const [data, setData] = useState<MeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const [, setNow] = useState(Date.now());
 
   const fetchMe = async () => {
     try {
@@ -67,6 +93,13 @@ export default function Me() {
 
   useEffect(() => {
     fetchMe();
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleCreateProfile = async (e: React.FormEvent) => {
@@ -281,7 +314,14 @@ export default function Me() {
                   <div><strong>Skill:</strong> {ask.skill || 'N/A'}</div>
                   <div><strong>Message:</strong> {ask.message}</div>
                   <div><strong>Status:</strong> {ask.status}</div>
-                  {ask.createdAt && <div><strong>Created:</strong> {ask.createdAt}</div>}
+                  {ask.createdAt && (
+                    <>
+                      <div><strong>Created:</strong> {ask.createdAt}</div>
+                      <div style={{ marginTop: '5px', color: '#666' }}>
+                        {formatTimeRemaining(ask.createdAt, ask.ttlSeconds)}
+                      </div>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
@@ -327,7 +367,14 @@ export default function Me() {
                   <div><strong>Message:</strong> {offer.message}</div>
                   <div><strong>Availability:</strong> {offer.availabilityWindow}</div>
                   <div><strong>Status:</strong> {offer.status}</div>
-                  {offer.createdAt && <div><strong>Created:</strong> {offer.createdAt}</div>}
+                  {offer.createdAt && (
+                    <>
+                      <div><strong>Created:</strong> {offer.createdAt}</div>
+                      <div style={{ marginTop: '5px', color: '#666' }}>
+                        {formatTimeRemaining(offer.createdAt, offer.ttlSeconds)}
+                      </div>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>

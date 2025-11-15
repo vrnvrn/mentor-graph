@@ -8,6 +8,7 @@ type Ask = {
   createdAt: string;
   status: string;
   message: string;
+  ttlSeconds: number;
 };
 
 type Offer = {
@@ -19,13 +20,38 @@ type Offer = {
   status: string;
   message: string;
   availabilityWindow: string;
+  ttlSeconds: number;
 };
+
+function formatTimeRemaining(createdAt: string, ttlSeconds: number): string {
+  const created = new Date(createdAt).getTime();
+  const expires = created + (ttlSeconds * 1000);
+  const now = Date.now();
+  const remaining = expires - now;
+
+  if (remaining <= 0) {
+    return '⏰ Expired';
+  }
+
+  const hours = Math.floor(remaining / (1000 * 60 * 60));
+  const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+  if (hours > 0) {
+    return `⏰ ${hours}h ${minutes}m remaining`;
+  } else if (minutes > 0) {
+    return `⏰ ${minutes}m ${seconds}s remaining`;
+  } else {
+    return `⏰ ${seconds}s remaining`;
+  }
+}
 
 export default function Network() {
   const [asks, setAsks] = useState<Ask[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [skillFilter, setSkillFilter] = useState('');
+  const [, setNow] = useState(Date.now());
 
   const fetchNetwork = async (skill?: string) => {
     try {
@@ -48,6 +74,13 @@ export default function Network() {
 
   useEffect(() => {
     fetchNetwork();
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleApplyFilter = (e: React.FormEvent) => {
@@ -105,6 +138,11 @@ export default function Network() {
                 <div style={{ marginBottom: '4px' }}>
                   <strong>Space ID:</strong> {ask.spaceId || 'N/A'}
                 </div>
+                {ask.createdAt && (
+                  <div style={{ marginTop: '8px', padding: '5px', background: '#f0f0f0', borderRadius: '3px', color: '#666' }}>
+                    {formatTimeRemaining(ask.createdAt, ask.ttlSeconds)}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -134,6 +172,11 @@ export default function Network() {
                 <div style={{ marginBottom: '4px' }}>
                   <strong>Status:</strong> {offer.status || 'N/A'}
                 </div>
+                {offer.createdAt && (
+                  <div style={{ marginTop: '8px', padding: '5px', background: '#f0f0f0', borderRadius: '3px', color: '#666' }}>
+                    {formatTimeRemaining(offer.createdAt, offer.ttlSeconds)}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
