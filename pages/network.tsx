@@ -1138,7 +1138,7 @@ export default function Network() {
                       fontSize: '16px',
                       fontWeight: '600'
                     }}>
-                      🔴 Ask — {ask.skill || 'Unknown'}
+                      🔴 Ask. {ask.skill || 'Unknown'}
                     </strong>
                   </div>
                   <div style={{ 
@@ -1267,7 +1267,7 @@ export default function Network() {
                       fontSize: '16px',
                       fontWeight: '600'
                     }}>
-                      🟢 Offer — {offer.skill || 'Unknown'}
+                      🟢 Offer. {offer.skill || 'Unknown'}
                     </strong>
                   </div>
                   <div style={{ 

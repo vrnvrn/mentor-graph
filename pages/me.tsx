@@ -106,6 +106,28 @@ function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text);
 }
 
+function ArkivHelperText({ darkMode }: { darkMode: boolean }) {
+  return (
+    <div style={{
+      marginTop: '6px',
+      fontSize: '12px',
+      color: darkMode ? '#b0b0b0' : '#6c757d',
+      fontStyle: 'italic',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+    }}>
+      <span>⚠️</span>
+      <span>Immutable data. Stored permanently on <a 
+        href="https://explorer.mendoza.hoodi.arkiv.network" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        style={{ color: '#0066cc', textDecoration: 'underline' }}
+      >Arkiv</a>. Edits only change what is displayed.</span>
+    </div>
+  );
+}
+
 export default function Me() {
   const router = useRouter();
   const [data, setData] = useState<MeData | null>(null);
@@ -116,6 +138,15 @@ export default function Me() {
   const [, setNow] = useState(Date.now());
   const [txHashMap, setTxHashMap] = useState<Record<string, string>>({});
   const [editingProfile, setEditingProfile] = useState(false);
+  const [showArkivWarning, setShowArkivWarning] = useState(false);
+
+  // Check if user has dismissed the warning before
+  useEffect(() => {
+    const hasSeenWarning = localStorage.getItem('arkiv-warning-dismissed');
+    if (!hasSeenWarning) {
+      setShowArkivWarning(true);
+    }
+  }, []);
 
   const fetchMe = async () => {
     try {
@@ -585,6 +616,179 @@ export default function Me() {
         </div>
       )}
 
+      {/* Arkiv Immutability Warning Modal */}
+      {showArkivWarning && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px',
+        }}
+        onClick={() => {
+          localStorage.setItem('arkiv-warning-dismissed', 'true');
+          setShowArkivWarning(false);
+        }}
+        >
+          <div 
+            style={{
+              backgroundColor: theme.cardBg,
+              borderRadius: '12px',
+              padding: '32px',
+              maxWidth: '600px',
+              width: '100%',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+              border: `2px solid ${theme.border}`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              marginBottom: '20px',
+            }}>
+              <h2 style={{
+                margin: 0,
+                fontSize: '24px',
+                fontWeight: '700',
+                color: theme.errorText,
+              }}>
+                ⚠️ Attention!
+              </h2>
+              <button
+                onClick={() => {
+                  localStorage.setItem('arkiv-warning-dismissed', 'true');
+                  setShowArkivWarning(false);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  color: theme.textSecondary,
+                  cursor: 'pointer',
+                  padding: '0',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '4px',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = theme.hoverBg;
+                  e.currentTarget.style.color = theme.text;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = theme.textSecondary;
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{
+              color: theme.text,
+              fontSize: '16px',
+              lineHeight: '1.6',
+              marginBottom: '24px',
+            }}>
+              <p style={{ marginBottom: '16px' }}>
+                <strong>Everything entered on this site is stored on <a 
+                  href="https://explorer.mendoza.hoodi.arkiv.network" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ 
+                    color: '#0066cc',
+                    textDecoration: 'underline',
+                  }}
+                >Arkiv</a> and is <strong style={{ color: theme.errorText }}>immutable</strong>.</strong>
+              </p>
+              
+              <p style={{ marginBottom: '16px' }}>
+                When you edit your profile, it only changes on the front-end. Each edit creates a new entity on Arkiv. Your previous data remains permanently stored on the blockchain.
+              </p>
+              
+              <p style={{ 
+                marginBottom: 0,
+                padding: '12px',
+                backgroundColor: theme.errorBg,
+                borderRadius: '6px',
+                border: `1px solid ${theme.errorBorder}`,
+                color: theme.errorText,
+                fontWeight: '500',
+              }}>
+                ⚠️ Please be careful with all information you share. Once stored on Arkiv, it cannot be deleted or modified.
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                localStorage.setItem('arkiv-warning-dismissed', 'true');
+                setShowArkivWarning(false);
+              }}
+              style={{
+                width: '100%',
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: '600',
+                backgroundColor: '#0066cc',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#0052a3';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#0066cc';
+              }}
+            >
+              I Understand
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Persistent Arkiv Warning Banner */}
+      <div style={{
+        marginBottom: '24px',
+        padding: '14px 18px',
+        backgroundColor: darkMode ? '#2a1f1f' : '#fff3cd',
+        border: `1px solid ${darkMode ? '#5a2f2f' : '#ffc107'}`,
+        borderRadius: '8px',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '12px',
+      }}>
+        <span style={{ fontSize: '20px', flexShrink: 0 }}>⚠️</span>
+        <div style={{ flex: 1, color: darkMode ? '#ff6b6b' : '#856404', fontSize: '14px', lineHeight: '1.5' }}>
+          <strong>Data stored on Arkiv is immutable.</strong> All information you enter is permanently stored on the{' '}
+          <a 
+            href="https://explorer.mendoza.hoodi.arkiv.network" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ 
+              color: '#0066cc',
+              textDecoration: 'underline',
+            }}
+          >
+            Arkiv blockchain
+          </a>
+          {' '}and cannot be deleted or modified. Editing creates new entities. Previous data remains on-chain.
+        </div>
+      </div>
+
       <section style={{ 
         marginBottom: '40px', 
         padding: '20px', 
@@ -761,6 +965,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -780,6 +985,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -799,6 +1005,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -818,6 +1025,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -839,6 +1047,7 @@ export default function Me() {
                         resize: 'vertical',
                       }}
                     />
+                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -858,6 +1067,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -877,6 +1087,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -939,6 +1150,7 @@ export default function Me() {
                         }}
                       />
                     </div>
+                    <ArkivHelperText darkMode={darkMode} />
                   </div>
                 </div>
 
@@ -963,6 +1175,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -986,6 +1199,7 @@ export default function Me() {
                       <option value="advanced">Advanced</option>
                       <option value="expert">Expert</option>
                     </select>
+                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1005,6 +1219,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1024,6 +1239,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ArkivHelperText darkMode={darkMode} />
                   </div>
 
                   <div style={{ marginBottom: '12px' }}>
@@ -1043,6 +1259,7 @@ export default function Me() {
                         fontSize: '14px',
                       }}
                     />
+                    <ArkivHelperText darkMode={darkMode} />
                   </div>
                 </div>
 
@@ -1114,6 +1331,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1132,6 +1350,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1150,6 +1369,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1168,6 +1388,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1186,6 +1407,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1204,6 +1426,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1262,6 +1485,7 @@ export default function Me() {
                     }}
                   />
                 </div>
+                <ArkivHelperText darkMode={darkMode} />
               </div>
             </div>
 
@@ -1285,6 +1509,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1307,6 +1532,7 @@ export default function Me() {
                   <option value="advanced">Advanced</option>
                   <option value="expert">Expert</option>
                 </select>
+                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1325,6 +1551,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1343,6 +1570,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ArkivHelperText darkMode={darkMode} />
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -1361,6 +1589,7 @@ export default function Me() {
                     fontSize: '14px',
                   }}
                 />
+                <ArkivHelperText darkMode={darkMode} />
               </div>
             </div>
 
@@ -1409,40 +1638,42 @@ export default function Me() {
           border: `1px solid ${theme.borderLight}`
         }}>
           <div style={{ marginBottom: '10px' }}>
-            <label style={{ color: theme.text }}>
+            <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
               Skill:
-              <input 
-                type="text" 
-                name="skill" 
-                required 
-                style={{ 
-                  marginLeft: '10px',
-                  padding: '6px 10px',
-                  borderRadius: '4px',
-                  border: `1px solid ${theme.inputBorder}`,
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                }} 
-              />
             </label>
+            <input 
+              type="text" 
+              name="skill" 
+              required 
+              style={{ 
+                width: '100%',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.inputBorder}`,
+                backgroundColor: theme.inputBg,
+                color: theme.text,
+              }} 
+            />
+            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
-            <label style={{ color: theme.text }}>
+            <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
               Message:
-              <input 
-                type="text" 
-                name="message" 
-                required 
-                style={{ 
-                  marginLeft: '10px',
-                  padding: '6px 10px',
-                  borderRadius: '4px',
-                  border: `1px solid ${theme.inputBorder}`,
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                }} 
-              />
             </label>
+            <input 
+              type="text" 
+              name="message" 
+              required 
+              style={{ 
+                width: '100%',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.inputBorder}`,
+                backgroundColor: theme.inputBg,
+                color: theme.text,
+              }} 
+            />
+            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
             <label style={{ color: theme.text }}>
@@ -1605,58 +1836,61 @@ export default function Me() {
           border: `1px solid ${theme.borderLight}`
         }}>
           <div style={{ marginBottom: '10px' }}>
-            <label style={{ color: theme.text }}>
+            <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
               Skill:
-              <input 
-                type="text" 
-                name="skill" 
-                required 
-                style={{ 
-                  marginLeft: '10px',
-                  padding: '6px 10px',
-                  borderRadius: '4px',
-                  border: `1px solid ${theme.inputBorder}`,
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                }} 
-              />
             </label>
+            <input 
+              type="text" 
+              name="skill" 
+              required 
+              style={{ 
+                width: '100%',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.inputBorder}`,
+                backgroundColor: theme.inputBg,
+                color: theme.text,
+              }} 
+            />
+            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
-            <label style={{ color: theme.text }}>
+            <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
               Message:
-              <input 
-                type="text" 
-                name="message" 
-                required 
-                style={{ 
-                  marginLeft: '10px',
-                  padding: '6px 10px',
-                  borderRadius: '4px',
-                  border: `1px solid ${theme.inputBorder}`,
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                }} 
-              />
             </label>
+            <input 
+              type="text" 
+              name="message" 
+              required 
+              style={{ 
+                width: '100%',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.inputBorder}`,
+                backgroundColor: theme.inputBg,
+                color: theme.text,
+              }} 
+            />
+            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
-            <label style={{ color: theme.text }}>
+            <label style={{ color: theme.text, display: 'block', marginBottom: '4px' }}>
               Availability Window:
-              <input 
-                type="text" 
-                name="availabilityWindow" 
-                required 
-                style={{ 
-                  marginLeft: '10px',
-                  padding: '6px 10px',
-                  borderRadius: '4px',
-                  border: `1px solid ${theme.inputBorder}`,
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                }} 
-              />
             </label>
+            <input 
+              type="text" 
+              name="availabilityWindow" 
+              required 
+              style={{ 
+                width: '100%',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.inputBorder}`,
+                backgroundColor: theme.inputBg,
+                color: theme.text,
+              }} 
+            />
+            <ArkivHelperText darkMode={darkMode} />
           </div>
           <div style={{ marginBottom: '10px' }}>
             <label style={{ color: theme.text }}>
