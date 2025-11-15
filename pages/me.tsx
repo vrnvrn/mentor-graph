@@ -118,6 +118,18 @@ export default function Me() {
     return () => clearInterval(interval);
   }, []);
 
+  // Set body background to match theme
+  useEffect(() => {
+    document.body.style.backgroundColor = darkMode ? '#1a1a1a' : '#f8f9fa';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    return () => {
+      document.body.style.backgroundColor = '';
+      document.body.style.margin = '';
+      document.body.style.padding = '';
+    };
+  }, [darkMode]);
+
   const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting('profile');
@@ -327,10 +339,15 @@ export default function Me() {
   if (loading) {
     return (
       <main style={{ 
-        padding: '20px', 
         minHeight: '100vh',
         backgroundColor: theme.bg,
-        transition: 'background-color 0.3s ease'
+        transition: 'background-color 0.3s ease',
+        width: '100%',
+        margin: 0,
+        padding: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}>
         <div style={{ color: theme.textSecondary }}>Loading...</div>
       </main>
@@ -340,10 +357,15 @@ export default function Me() {
   if (!data) {
     return (
       <main style={{ 
-        padding: '20px',
         minHeight: '100vh',
         backgroundColor: theme.bg,
-        transition: 'background-color 0.3s ease'
+        transition: 'background-color 0.3s ease',
+        width: '100%',
+        margin: 0,
+        padding: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}>
         <div style={{ color: theme.errorText }}>Error loading data</div>
       </main>
@@ -352,17 +374,26 @@ export default function Me() {
 
   return (
     <main style={{ 
-      padding: '20px',
       minHeight: '100vh',
       backgroundColor: theme.bg,
-      transition: 'background-color 0.3s ease'
+      transition: 'background-color 0.3s ease',
+      width: '100%',
+      margin: 0,
+      padding: 0,
     }}>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '30px' 
+      <div style={{
+        maxWidth: '1400px',
+        margin: '0 auto',
+        padding: 'clamp(16px, 4vw, 32px)',
+        width: '100%',
+        boxSizing: 'border-box',
       }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '30px' 
+        }}>
         <h1 style={{ 
           margin: 0,
           color: theme.text,
@@ -1085,6 +1116,7 @@ export default function Me() {
           )}
         </div>
       </section>
+      </div>
     </main>
   );
 }

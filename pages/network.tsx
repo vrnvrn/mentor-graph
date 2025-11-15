@@ -138,6 +138,18 @@ export default function Network() {
     return () => clearInterval(interval);
   }, []);
 
+  // Set body background to match theme
+  useEffect(() => {
+    document.body.style.backgroundColor = darkMode ? '#1a1a1a' : '#f8f9fa';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    return () => {
+      document.body.style.backgroundColor = '';
+      document.body.style.margin = '';
+      document.body.style.padding = '';
+    };
+  }, [darkMode]);
+
   useEffect(() => {
     console.log('[Network] Setting up SSE connection...');
     const source = new EventSource('/api/subscribe');
@@ -501,10 +513,15 @@ export default function Network() {
   if (loading) {
     return (
       <main style={{ 
-        padding: '40px 20px', 
         minHeight: '100vh',
         backgroundColor: theme.bg,
-        transition: 'background-color 0.3s ease'
+        transition: 'background-color 0.3s ease',
+        width: '100%',
+        margin: 0,
+        padding: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}>
         <div style={{ textAlign: 'center', color: theme.textSecondary, fontSize: '16px' }}>Loading network data...</div>
       </main>
@@ -513,22 +530,29 @@ export default function Network() {
 
   return (
     <main style={{ 
-      padding: '32px 24px', 
       minHeight: '100vh',
       backgroundColor: theme.bg,
-      maxWidth: '1600px',
-      margin: '0 auto',
-      transition: 'background-color 0.3s ease'
+      transition: 'background-color 0.3s ease',
+      width: '100%',
+      margin: 0,
+      padding: 0,
     }}>
-      {/* Header */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '32px',
-        paddingBottom: '24px',
-        borderBottom: `2px solid ${theme.borderLight}`
+      <div style={{
+        maxWidth: '1600px',
+        margin: '0 auto',
+        padding: 'clamp(16px, 4vw, 32px) clamp(16px, 3vw, 24px)',
+        width: '100%',
+        boxSizing: 'border-box',
       }}>
+        {/* Header */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '32px',
+          paddingBottom: '24px',
+          borderBottom: `2px solid ${theme.borderLight}`
+        }}>
         <div>
           <h1 style={{ 
             margin: 0, 
@@ -1320,6 +1344,7 @@ export default function Network() {
             </div>
           </section>
         )}
+      </div>
       </div>
     </main>
   );
