@@ -85,11 +85,14 @@ export default function Network() {
   const [skillFilter, setSkillFilter] = useState('');
   const [currentFilterSkill, setCurrentFilterSkill] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'asks' | 'offers'>('all');
+  const [nameSearchFilter, setNameSearchFilter] = useState<string>('');
   const [seniorityFilter, setSeniorityFilter] = useState<string>('');
   const [mentorRoleFilter, setMentorRoleFilter] = useState<string>('');
   const [learnerRoleFilter, setLearnerRoleFilter] = useState<string>('');
   const [minReputationFilter, setMinReputationFilter] = useState<string>('');
   const [minSessionsFilter, setMinSessionsFilter] = useState<string>('');
+  const [minRatingFilter, setMinRatingFilter] = useState<string>('');
+  const [maxRatingFilter, setMaxRatingFilter] = useState<string>('');
   const [ttlFilter, setTtlFilter] = useState<string>(''); // 'active' | 'expiring' | 'all'
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [userWallet, setUserWallet] = useState<string>('');
@@ -117,10 +120,13 @@ export default function Network() {
   const fetchNetwork = async (filters?: {
     skill?: string;
     seniority?: string;
+    nameSearch?: string;
     mentorRole?: string;
     learnerRole?: string;
     minReputation?: string;
     minSessions?: string;
+    minRating?: string;
+    maxRating?: string;
     ttl?: string;
   }) => {
     try {
@@ -173,6 +179,19 @@ export default function Network() {
       }
       
       // Profile filters (client-side)
+      if (filters?.nameSearch) {
+        const searchLower = filters.nameSearch.toLowerCase();
+        filteredProfiles = filteredProfiles.filter((profile: any) => {
+          const displayName = (profile.displayName || '').toLowerCase();
+          const username = (profile.username || '').toLowerCase();
+          return displayName.includes(searchLower) || username.includes(searchLower);
+        });
+        // Filter asks/offers to only show those from matching profiles
+        const matchingWallets = new Set(filteredProfiles.map((p: any) => p.wallet.toLowerCase()));
+        filteredAsks = filteredAsks.filter((ask: Ask) => matchingWallets.has(ask.wallet.toLowerCase()));
+        filteredOffers = filteredOffers.filter((offer: Offer) => matchingWallets.has(offer.wallet.toLowerCase()));
+      }
+      
       if (filters?.mentorRole) {
         filteredProfiles = filteredProfiles.filter((profile: any) => {
           const mentorRoles = profile.mentorRoles || [];
@@ -209,6 +228,19 @@ export default function Network() {
             return sessions >= minSess;
           });
         }
+      }
+      
+      if (filters?.minRating || filters?.maxRating) {
+        const minRating = filters.minRating ? parseFloat(filters.minRating) : 0;
+        const maxRating = filters.maxRating ? parseFloat(filters.maxRating) : 5;
+        filteredProfiles = filteredProfiles.filter((profile: any) => {
+          const avgRating = profile.avgRating || 0;
+          return avgRating >= minRating && avgRating <= maxRating;
+        });
+        // Filter asks/offers to only show those from matching profiles
+        const matchingWallets = new Set(filteredProfiles.map((p: any) => p.wallet.toLowerCase()));
+        filteredAsks = filteredAsks.filter((ask: Ask) => matchingWallets.has(ask.wallet.toLowerCase()));
+        filteredOffers = filteredOffers.filter((offer: Offer) => matchingWallets.has(offer.wallet.toLowerCase()));
       }
       
       setAsks(filteredAsks);
@@ -297,10 +329,13 @@ export default function Network() {
     fetchNetwork({
       skill: skillFilter || undefined,
       seniority: seniorityFilter || undefined,
+      nameSearch: nameSearchFilter || undefined,
       mentorRole: mentorRoleFilter || undefined,
       learnerRole: learnerRoleFilter || undefined,
       minReputation: minReputationFilter || undefined,
       minSessions: minSessionsFilter || undefined,
+      minRating: minRatingFilter || undefined,
+      maxRating: maxRatingFilter || undefined,
       ttl: ttlFilter || undefined,
     });
   };
@@ -804,6 +839,27 @@ export default function Network() {
             </label>
             
             <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Name / Username</span>
+              <input
+                type="text"
+                value={nameSearchFilter}
+                onChange={(e) => setNameSearchFilter(e.target.value)}
+                placeholder="Search by name or username"
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              />
+            </label>
+            
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Seniority</span>
               <select
                 value={seniorityFilter}
@@ -967,6 +1023,57 @@ export default function Network() {
             </label>
           </div>
           
+          {/* Row 3: Rating Range Filter */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Min Rating (1-5)</span>
+              <input
+                type="number"
+                value={minRatingFilter}
+                onChange={(e) => setMinRatingFilter(e.target.value)}
+                placeholder="e.g. 3.0"
+                min="0"
+                max="5"
+                step="0.1"
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              />
+            </label>
+            
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Max Rating (1-5)</span>
+              <input
+                type="number"
+                value={maxRatingFilter}
+                onChange={(e) => setMaxRatingFilter(e.target.value)}
+                placeholder="e.g. 5.0"
+                min="0"
+                max="5"
+                step="0.1"
+                style={{ 
+                  padding: '8px 12px', 
+                  borderRadius: '6px', 
+                  border: `1px solid ${theme.inputBorder}`,
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme.inputBorder}
+              />
+            </label>
+          </div>
+          
           {/* Submit Button */}
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <button 
@@ -1000,11 +1107,14 @@ export default function Network() {
               type="button"
               onClick={() => {
                 setSkillFilter('');
+                setNameSearchFilter('');
                 setSeniorityFilter('');
                 setMentorRoleFilter('');
                 setLearnerRoleFilter('');
                 setMinReputationFilter('');
                 setMinSessionsFilter('');
+                setMinRatingFilter('');
+                setMaxRatingFilter('');
                 setTtlFilter('');
                 setTypeFilter('all');
                 fetchNetwork();
