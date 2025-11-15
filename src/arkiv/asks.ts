@@ -48,17 +48,22 @@ export async function createAsk({
   return { key: entityKey, txHash };
 }
 
-export async function listAsks(): Promise<Ask[]> {
+export async function listAsks(params?: { skill?: string; spaceId?: string }): Promise<Ask[]> {
   const publicClient = getPublicClient();
   const query = publicClient.buildQuery();
-  const result = await query
-    .where(eq('type', 'ask'))
+  let queryBuilder = query.where(eq('type', 'ask')).where(eq('status', 'open'));
+  
+  if (params?.spaceId) {
+    queryBuilder = queryBuilder.where(eq('spaceId', params.spaceId));
+  }
+  
+  const result = await queryBuilder
     .withAttributes(true)
     .withPayload(true)
     .limit(100)
     .fetch();
 
-  return result.entities.map((entity: any) => {
+  let asks = result.entities.map((entity: any) => {
     let payload: any = {};
     try {
       if (entity.payload) {
@@ -85,6 +90,13 @@ export async function listAsks(): Promise<Ask[]> {
       txHash: payload.txHash,
     };
   });
+
+  if (params?.skill) {
+    const skillLower = params.skill.toLowerCase();
+    asks = asks.filter(ask => ask.skill.toLowerCase().includes(skillLower));
+  }
+
+  return asks;
 }
 
 export async function listAsksForWallet(wallet: string): Promise<Ask[]> {
