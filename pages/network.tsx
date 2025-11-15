@@ -607,19 +607,20 @@ export default function Network() {
       });
 
       // Wallet-based connections (same wallet - entities from same contributor)
-      displayedNodes.forEach((target) => {
-        if (target.id === node.id) return;
-        if (node.wallet === target.wallet) {
-          const targetPos = getNodePosition(target.id, target.x, target.y);
-          connections.push({
-            from: node.id,
-            to: target.id,
-            type: 'wallet',
-            fromPos: nodePos,
-            toPos: targetPos,
-          });
-        }
-      });
+      // DISABLED: All entities are from same wallet, so this creates too much clutter
+      // displayedNodes.forEach((target) => {
+      //   if (target.id === node.id) return;
+      //   if (node.wallet === target.wallet) {
+      //     const targetPos = getNodePosition(target.id, target.x, target.y);
+      //     connections.push({
+      //       from: node.id,
+      //       to: target.id,
+      //       type: 'wallet',
+      //       fromPos: nodePos,
+      //       toPos: targetPos,
+      //     });
+      //   }
+      // });
 
       // Match connections (ask + offer with match scoring)
       if (node.type === 'ask') {
