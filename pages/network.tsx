@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 
 type Ask = {
   key: string;
@@ -70,6 +71,7 @@ function shortenWallet(wallet: string): string {
 }
 
 export default function Network() {
+  const router = useRouter();
   const [asks, setAsks] = useState<Ask[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -201,7 +203,34 @@ export default function Network() {
 
   return (
     <main style={{ padding: '20px' }}>
-      <h1 style={{ marginBottom: '30px' }}>Network Analytics</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+        <h1 style={{ margin: 0 }}>Network Analytics</h1>
+        <button
+          onClick={() => router.push('/me')}
+          style={{
+            padding: '12px 24px',
+            fontSize: '16px',
+            fontWeight: '600',
+            backgroundColor: '#666',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+            transition: 'background-color 0.2s, transform 0.1s',
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = '#555';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = '#666';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          ← My Dashboard
+        </button>
+      </div>
 
       {/* Header + Filters */}
       <section style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#f9f9f9' }}>
