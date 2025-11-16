@@ -69,24 +69,33 @@ export default function Home() {
     };
   }, [darkMode]);
 
-  const networkPattern = `data:image/svg+xml,${encodeURIComponent(`
-    <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  // Bioluminescent forest pattern - organic, glowing nodes
+  const forestPattern = `data:image/svg+xml,${encodeURIComponent(`
+    <svg width="600" height="600" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <pattern id="network" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
-          <circle cx="50" cy="50" r="3" fill="rgba(0, 102, 204, 0.1)"/>
-          <circle cx="150" cy="50" r="3" fill="rgba(0, 102, 204, 0.1)"/>
-          <circle cx="50" cy="150" r="3" fill="rgba(0, 102, 204, 0.1)"/>
-          <circle cx="150" cy="150" r="3" fill="rgba(0, 102, 204, 0.1)"/>
-          <circle cx="100" cy="100" r="4" fill="rgba(0, 102, 204, 0.15)"/>
-          <line x1="50" y1="50" x2="100" y2="100" stroke="rgba(0, 102, 204, 0.08)" stroke-width="1"/>
-          <line x1="150" y1="50" x2="100" y2="100" stroke="rgba(0, 102, 204, 0.08)" stroke-width="1"/>
-          <line x1="50" y1="150" x2="100" y2="100" stroke="rgba(0, 102, 204, 0.08)" stroke-width="1"/>
-          <line x1="150" y1="150" x2="100" y2="100" stroke="rgba(0, 102, 204, 0.08)" stroke-width="1"/>
-          <line x1="50" y1="50" x2="150" y2="50" stroke="rgba(0, 102, 204, 0.05)" stroke-width="1"/>
-          <line x1="50" y1="50" x2="50" y2="150" stroke="rgba(0, 102, 204, 0.05)" stroke-width="1"/>
+        <radialGradient id="glow1" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="rgba(76, 175, 80, 0.4)" stop-opacity="1"/>
+          <stop offset="100%" stop-color="rgba(76, 175, 80, 0)" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="glow2" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="rgba(139, 195, 74, 0.3)" stop-opacity="1"/>
+          <stop offset="100%" stop-color="rgba(139, 195, 74, 0)" stop-opacity="0"/>
+        </radialGradient>
+        <pattern id="forest" x="0" y="0" width="300" height="300" patternUnits="userSpaceOnUse">
+          <!-- Organic glowing nodes like bioluminescent flora -->
+          <circle cx="80" cy="80" r="8" fill="url(#glow1)"/>
+          <circle cx="220" cy="60" r="6" fill="url(#glow2)"/>
+          <circle cx="150" cy="150" r="10" fill="url(#glow1)"/>
+          <circle cx="50" cy="200" r="7" fill="url(#glow2)"/>
+          <circle cx="250" cy="180" r="5" fill="url(#glow1)"/>
+          <circle cx="100" cy="250" r="6" fill="url(#glow2)"/>
+          <!-- Subtle connecting lines like mycelium -->
+          <path d="M 80,80 Q 120,100 150,150" stroke="rgba(76, 175, 80, 0.15)" stroke-width="1.5" fill="none"/>
+          <path d="M 220,60 Q 200,120 150,150" stroke="rgba(139, 195, 74, 0.12)" stroke-width="1.5" fill="none"/>
+          <path d="M 150,150 Q 100,180 50,200" stroke="rgba(76, 175, 80, 0.1)" stroke-width="1" fill="none"/>
         </pattern>
       </defs>
-      <rect width="100%" height="100%" fill="url(#network)"/>
+      <rect width="100%" height="100%" fill="url(#forest)"/>
     </svg>
   `)}`;
 
@@ -110,12 +119,13 @@ export default function Home() {
       justifyContent: 'center',
       textAlign: 'center',
       position: 'relative',
-      backgroundColor: theme.bg,
-      backgroundImage: darkMode ? 'none' : `url("${networkPattern}")`,
-      backgroundSize: '400px 400px',
+      backgroundColor: darkMode ? '#0a0a0a' : '#f5f9f5',
+      backgroundImage: `url("${forestPattern}")`,
+      backgroundSize: darkMode ? '600px 600px' : '400px 400px',
       backgroundPosition: 'center',
       backgroundRepeat: 'repeat',
       transition: 'background-color 0.3s ease',
+      overflow: 'hidden',
     }}>
       <div style={{
         position: 'absolute',
@@ -148,13 +158,32 @@ export default function Home() {
           {darkMode ? '☀️' : '🌙'}
         </button>
       </div>
+      {/* Subtle glowing overlay for dark mode */}
+      {darkMode && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'radial-gradient(circle at 30% 20%, rgba(76, 175, 80, 0.08) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(139, 195, 74, 0.06) 0%, transparent 50%)',
+          pointerEvents: 'none',
+        }} />
+      )}
+      
       <div style={{
         position: 'relative',
         zIndex: 1,
-        backgroundColor: theme.cardBg,
+        backgroundColor: darkMode ? 'rgba(26, 26, 26, 0.85)' : 'rgba(255, 255, 255, 0.92)',
+        backdropFilter: 'blur(10px)',
         padding: 'clamp(40px, 8vw, 60px) clamp(24px, 5vw, 40px)',
-        borderRadius: '12px',
-        boxShadow: darkMode ? '0 4px 20px rgba(0, 0, 0, 0.5)' : '0 4px 20px rgba(0, 0, 0, 0.1)',
+        borderRadius: '20px',
+        border: darkMode 
+          ? '1px solid rgba(76, 175, 80, 0.2)' 
+          : '1px solid rgba(76, 175, 80, 0.1)',
+        boxShadow: darkMode 
+          ? '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 40px rgba(76, 175, 80, 0.1), inset 0 0 20px rgba(76, 175, 80, 0.05)' 
+          : '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 20px rgba(76, 175, 80, 0.05)',
         maxWidth: '800px',
         width: '90%',
         margin: '0 auto',
@@ -166,6 +195,10 @@ export default function Home() {
           marginBottom: '24px',
           color: theme.text,
           transition: 'color 0.3s ease',
+          textShadow: darkMode 
+            ? '0 0 20px rgba(76, 175, 80, 0.3), 0 0 40px rgba(76, 175, 80, 0.1)' 
+            : 'none',
+          letterSpacing: '-0.02em',
         }}>
           MentorGraph
         </h1>
@@ -178,7 +211,7 @@ export default function Home() {
           lineHeight: '1.5',
           transition: 'color 0.3s ease',
         }}>
-          A real-time mentorship network where your data grows in the Arkiv garden 🌱 and belongs to you.
+          A real-time mentorship network where your data grows in the Arkiv garden and belongs to you.
         </h2>
 
         <p style={{
@@ -189,8 +222,11 @@ export default function Home() {
           maxWidth: '600px',
           margin: '0 auto 40px',
           transition: 'color 0.3s ease',
+          fontStyle: 'italic',
         }}>
-          Connect your wallet to load your public mentorship profile and share your asks/offers with your network.
+          Let knowledge and network be lights to guide our way in the dark forest.
+          <br /><br />
+          Connect your wallet to begin.
         </p>
 
         {error && (
@@ -213,24 +249,41 @@ export default function Home() {
               padding: '16px 36px',
               fontSize: '20px',
               fontWeight: '500',
-              backgroundColor: (connecting || loadingExample) ? '#888' : '#0066cc',
+              background: (connecting || loadingExample) 
+                ? '#888' 
+                : darkMode
+                  ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(46, 125, 50, 0.9) 100%)'
+                  : 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)',
               color: 'white',
-              border: 'none',
-              borderRadius: '6px',
+              border: darkMode && !(connecting || loadingExample)
+                ? '1px solid rgba(76, 175, 80, 0.5)'
+                : 'none',
+              borderRadius: '12px',
               cursor: (connecting || loadingExample) ? 'not-allowed' : 'pointer',
-              transition: 'background-color 0.2s',
+              transition: 'all 0.3s ease',
               opacity: (connecting || loadingExample) ? 0.7 : 1,
               width: '100%',
               maxWidth: '300px',
+              boxShadow: (connecting || loadingExample) 
+                ? 'none' 
+                : darkMode
+                  ? '0 4px 20px rgba(76, 175, 80, 0.3), 0 0 30px rgba(76, 175, 80, 0.1)'
+                  : '0 4px 20px rgba(76, 175, 80, 0.2)',
             }}
             onMouseOver={(e) => {
               if (!connecting && !loadingExample) {
-                e.currentTarget.style.backgroundColor = '#0052a3';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = darkMode
+                  ? '0 6px 24px rgba(76, 175, 80, 0.4), 0 0 40px rgba(76, 175, 80, 0.15)'
+                  : '0 6px 24px rgba(76, 175, 80, 0.3)';
               }
             }}
             onMouseOut={(e) => {
               if (!connecting && !loadingExample) {
-                e.currentTarget.style.backgroundColor = '#0066cc';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = darkMode
+                  ? '0 4px 20px rgba(76, 175, 80, 0.3), 0 0 30px rgba(76, 175, 80, 0.1)'
+                  : '0 4px 20px rgba(76, 175, 80, 0.2)';
               }
             }}
           >

@@ -278,7 +278,7 @@ export default function Me() {
 
   // Set body background to match theme and persist dark mode
   useEffect(() => {
-    document.body.style.backgroundColor = darkMode ? '#1a1a1a' : '#f8f9fa';
+    document.body.style.backgroundColor = darkMode ? '#0a0a0a' : '#f5f9f5';
     document.body.style.margin = '0';
     document.body.style.padding = '0';
     // Persist dark mode preference
@@ -597,18 +597,22 @@ export default function Me() {
 
   // Theme colors based on dark mode
   const theme = {
-    bg: darkMode ? '#1a1a1a' : '#f8f9fa',
-    cardBg: darkMode ? '#2d2d2d' : '#ffffff',
+    bg: darkMode ? '#0a0a0a' : '#f5f9f5',
+    cardBg: darkMode ? 'rgba(26, 26, 26, 0.85)' : 'rgba(255, 255, 255, 0.9)',
     text: darkMode ? '#e0e0e0' : '#212529',
     textSecondary: darkMode ? '#b0b0b0' : '#6c757d',
     textTertiary: darkMode ? '#888888' : '#868e96',
-    border: darkMode ? '#404040' : '#dee2e6',
-    borderLight: darkMode ? '#353535' : '#e9ecef',
-    inputBg: darkMode ? '#353535' : '#ffffff',
-    inputBorder: darkMode ? '#505050' : '#ced4da',
-    hoverBg: darkMode ? '#3a3a3a' : '#f1f3f5',
-    shadow: darkMode ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.08)',
-    shadowHover: darkMode ? '0 4px 12px rgba(0, 0, 0, 0.4)' : '0 4px 12px rgba(0, 0, 0, 0.1)',
+    border: darkMode ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.15)',
+    borderLight: darkMode ? 'rgba(76, 175, 80, 0.15)' : 'rgba(76, 175, 80, 0.08)',
+    inputBg: darkMode ? 'rgba(35, 35, 35, 0.8)' : 'rgba(255, 255, 255, 0.95)',
+    inputBorder: darkMode ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.2)',
+    hoverBg: darkMode ? 'rgba(76, 175, 80, 0.1)' : 'rgba(76, 175, 80, 0.05)',
+    shadow: darkMode 
+      ? '0 4px 16px rgba(0, 0, 0, 0.4), 0 0 20px rgba(76, 175, 80, 0.1)' 
+      : '0 4px 16px rgba(0, 0, 0, 0.08), 0 0 10px rgba(76, 175, 80, 0.05)',
+    shadowHover: darkMode 
+      ? '0 6px 24px rgba(0, 0, 0, 0.5), 0 0 30px rgba(76, 175, 80, 0.15)' 
+      : '0 6px 24px rgba(0, 0, 0, 0.12), 0 0 15px rgba(76, 175, 80, 0.08)',
     errorBg: darkMode ? '#3a1f1f' : '#ffebee',
     errorBorder: darkMode ? '#5a2f2f' : '#f44336',
     errorText: darkMode ? '#ff6b6b' : '#c62828',
@@ -650,21 +654,66 @@ export default function Me() {
     );
   }
 
+  // Bioluminescent forest background pattern
+  const forestPattern = `data:image/svg+xml,${encodeURIComponent(`
+    <svg width="600" height="600" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="glow1" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="rgba(76, 175, 80, 0.3)" stop-opacity="1"/>
+          <stop offset="100%" stop-color="rgba(76, 175, 80, 0)" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="glow2" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="rgba(139, 195, 74, 0.25)" stop-opacity="1"/>
+          <stop offset="100%" stop-color="rgba(139, 195, 74, 0)" stop-opacity="0"/>
+        </radialGradient>
+        <pattern id="forest" x="0" y="0" width="300" height="300" patternUnits="userSpaceOnUse">
+          <circle cx="80" cy="80" r="6" fill="url(#glow1)"/>
+          <circle cx="220" cy="60" r="5" fill="url(#glow2)"/>
+          <circle cx="150" cy="150" r="8" fill="url(#glow1)"/>
+          <circle cx="50" cy="200" r="5" fill="url(#glow2)"/>
+          <path d="M 80,80 Q 120,100 150,150" stroke="rgba(76, 175, 80, 0.12)" stroke-width="1" fill="none"/>
+          <path d="M 220,60 Q 200,120 150,150" stroke="rgba(139, 195, 74, 0.1)" stroke-width="1" fill="none"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#forest)"/>
+    </svg>
+  `)}`;
+
   return (
     <main style={{ 
       minHeight: '100vh',
       backgroundColor: theme.bg,
+      backgroundImage: `url("${forestPattern}")`,
+      backgroundSize: darkMode ? '600px 600px' : '400px 400px',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'repeat',
       transition: 'background-color 0.3s ease',
       width: '100%',
       margin: 0,
       padding: 0,
+      position: 'relative',
     }}>
+      {/* Subtle glowing overlay for dark mode */}
+      {darkMode && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'radial-gradient(circle at 20% 30%, rgba(76, 175, 80, 0.06) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(139, 195, 74, 0.04) 0%, transparent 50%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }} />
+      )}
       <div style={{
         maxWidth: '1400px',
         margin: '0 auto',
         padding: 'clamp(16px, 4vw, 32px)',
         width: '100%',
         boxSizing: 'border-box',
+        position: 'relative',
+        zIndex: 1,
       }}>
         <div style={{ 
           display: 'flex', 
@@ -675,9 +724,14 @@ export default function Me() {
         <h1 style={{ 
           margin: 0,
           color: theme.text,
-          transition: 'color 0.3s ease'
+          transition: 'color 0.3s ease',
+          textShadow: darkMode 
+            ? '0 0 20px rgba(76, 175, 80, 0.2), 0 0 40px rgba(76, 175, 80, 0.1)' 
+            : 'none',
+          fontSize: 'clamp(28px, 5vw, 36px)',
+          fontWeight: '600',
         }}>
-          My Dashboard
+          🌲 My Garden
         </h1>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button
@@ -710,24 +764,32 @@ export default function Me() {
               padding: '12px 24px',
               fontSize: '16px',
               fontWeight: '600',
-              backgroundColor: '#0066cc',
+              background: darkMode
+                ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(46, 125, 50, 0.9) 100%)'
+                : 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)',
               color: 'white',
-              border: 'none',
-              borderRadius: '6px',
+              border: darkMode ? '1px solid rgba(76, 175, 80, 0.5)' : 'none',
+              borderRadius: '10px',
               cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-              transition: 'background-color 0.2s, transform 0.1s',
+              boxShadow: darkMode
+                ? '0 4px 16px rgba(76, 175, 80, 0.3), 0 0 24px rgba(76, 175, 80, 0.1)'
+                : '0 4px 16px rgba(76, 175, 80, 0.25)',
+              transition: 'all 0.3s ease',
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = '#0052a3';
-              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = darkMode
+                ? '0 6px 20px rgba(76, 175, 80, 0.4), 0 0 32px rgba(76, 175, 80, 0.15)'
+                : '0 6px 20px rgba(76, 175, 80, 0.35)';
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = '#0066cc';
               e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = darkMode
+                ? '0 4px 16px rgba(76, 175, 80, 0.3), 0 0 24px rgba(76, 175, 80, 0.1)'
+                : '0 4px 16px rgba(76, 175, 80, 0.25)';
             }}
           >
-            Enter Network →
+            🌳 Enter Forest →
           </button>
         </div>
       </div>
@@ -932,21 +994,37 @@ export default function Me() {
 
       <section style={{ 
         marginBottom: '40px', 
-        padding: '20px', 
+        padding: '24px', 
         border: `1px solid ${theme.border}`, 
-        borderRadius: '8px',
+        borderRadius: '16px',
         backgroundColor: theme.cardBg,
+        backdropFilter: 'blur(10px)',
         boxShadow: theme.shadow,
-        transition: 'all 0.3s ease'
+        transition: 'all 0.3s ease',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
+        {/* Subtle glow effect */}
+        {darkMode && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.5), transparent)',
+          }} />
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h2 style={{ 
             color: theme.text,
             marginTop: 0,
             marginBottom: 0,
-            transition: 'color 0.3s ease'
+            transition: 'color 0.3s ease',
+            fontSize: 'clamp(20px, 4vw, 24px)',
+            fontWeight: '600',
           }}>
-            Wallet & Profile
+            🌳 Core Identity
           </h2>
           <button
             onClick={handleDisconnect}
@@ -2118,20 +2196,35 @@ export default function Me() {
       {/* Activity Summary */}
       <section style={{ 
         marginBottom: '40px', 
-        padding: '20px', 
+        padding: '24px', 
         border: `1px solid ${theme.border}`, 
-        borderRadius: '8px',
+        borderRadius: '16px',
         backgroundColor: theme.cardBg,
+        backdropFilter: 'blur(10px)',
         boxShadow: theme.shadow,
-        transition: 'all 0.3s ease'
+        transition: 'all 0.3s ease',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
+        {darkMode && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.5), transparent)',
+          }} />
+        )}
         <h2 style={{ 
           color: theme.text,
           marginTop: 0,
           marginBottom: '20px',
-          transition: 'color 0.3s ease'
+          transition: 'color 0.3s ease',
+          fontSize: 'clamp(20px, 4vw, 24px)',
+          fontWeight: '600',
         }}>
-          Activity Summary
+          🌿 Activity Summary
         </h2>
         
         <div style={{ 
@@ -2438,19 +2531,34 @@ export default function Me() {
 
       <section style={{ 
         marginBottom: '40px', 
-        padding: '20px', 
+        padding: '24px', 
         border: `1px solid ${theme.border}`, 
-        borderRadius: '8px',
+        borderRadius: '16px',
         backgroundColor: theme.cardBg,
+        backdropFilter: 'blur(10px)',
         boxShadow: theme.shadow,
-        transition: 'all 0.3s ease'
+        transition: 'all 0.3s ease',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
+        {darkMode && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent, rgba(239, 83, 80, 0.4), transparent)',
+          }} />
+        )}
         <h2 style={{ 
           color: theme.text,
           marginTop: 0,
-          transition: 'color 0.3s ease'
+          transition: 'color 0.3s ease',
+          fontSize: 'clamp(20px, 4vw, 24px)',
+          fontWeight: '600',
         }}>
-          My Asks ({data.asks.length})
+          💫 My Asks ({data.asks.length})
         </h2>
         <ArkivHelperText darkMode={darkMode} />
         <form onSubmit={handleCreateAsk} style={{ 
@@ -2635,19 +2743,34 @@ export default function Me() {
 
       <section style={{ 
         marginBottom: '40px', 
-        padding: '20px', 
+        padding: '24px', 
         border: `1px solid ${theme.border}`, 
-        borderRadius: '8px',
+        borderRadius: '16px',
         backgroundColor: theme.cardBg,
+        backdropFilter: 'blur(10px)',
         boxShadow: theme.shadow,
-        transition: 'all 0.3s ease'
+        transition: 'all 0.3s ease',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
+        {darkMode && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.4), transparent)',
+          }} />
+        )}
         <h2 style={{ 
           color: theme.text,
           marginTop: 0,
-          transition: 'color 0.3s ease'
+          transition: 'color 0.3s ease',
+          fontSize: 'clamp(20px, 4vw, 24px)',
+          fontWeight: '600',
         }}>
-          My Offers ({data.offers.length})
+          🌸 My Offers ({data.offers.length})
         </h2>
         <ArkivHelperText darkMode={darkMode} />
         <form onSubmit={handleCreateOffer} style={{ 

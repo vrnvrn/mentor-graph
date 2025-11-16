@@ -894,18 +894,22 @@ export default function Network() {
 
   // Theme colors based on dark mode (needed for loading state)
   const theme = {
-    bg: darkMode ? '#1a1a1a' : '#f8f9fa',
-    cardBg: darkMode ? '#2d2d2d' : '#ffffff',
+    bg: darkMode ? '#0a0a0a' : '#f5f9f5',
+    cardBg: darkMode ? 'rgba(26, 26, 26, 0.85)' : 'rgba(255, 255, 255, 0.9)',
     text: darkMode ? '#e0e0e0' : '#212529',
     textSecondary: darkMode ? '#b0b0b0' : '#6c757d',
     textTertiary: darkMode ? '#888888' : '#868e96',
-    border: darkMode ? '#404040' : '#dee2e6',
-    borderLight: darkMode ? '#353535' : '#e9ecef',
-    inputBg: darkMode ? '#353535' : '#ffffff',
-    inputBorder: darkMode ? '#505050' : '#ced4da',
-    hoverBg: darkMode ? '#3a3a3a' : '#f1f3f5',
-    shadow: darkMode ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.08)',
-    shadowHover: darkMode ? '0 4px 12px rgba(0, 0, 0, 0.4)' : '0 4px 12px rgba(0, 0, 0, 0.1)',
+    border: darkMode ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.15)',
+    borderLight: darkMode ? 'rgba(76, 175, 80, 0.15)' : 'rgba(76, 175, 80, 0.08)',
+    inputBg: darkMode ? 'rgba(35, 35, 35, 0.8)' : 'rgba(255, 255, 255, 0.95)',
+    inputBorder: darkMode ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.2)',
+    hoverBg: darkMode ? 'rgba(76, 175, 80, 0.1)' : 'rgba(76, 175, 80, 0.05)',
+    shadow: darkMode 
+      ? '0 4px 16px rgba(0, 0, 0, 0.4), 0 0 20px rgba(76, 175, 80, 0.1)' 
+      : '0 4px 16px rgba(0, 0, 0, 0.08), 0 0 10px rgba(76, 175, 80, 0.05)',
+    shadowHover: darkMode 
+      ? '0 6px 24px rgba(0, 0, 0, 0.5), 0 0 30px rgba(76, 175, 80, 0.15)' 
+      : '0 6px 24px rgba(0, 0, 0, 0.12), 0 0 15px rgba(76, 175, 80, 0.08)',
   };
 
   if (loading) {
@@ -926,15 +930,58 @@ export default function Network() {
     );
   }
 
+  // Bioluminescent forest background pattern
+  const forestPattern = `data:image/svg+xml,${encodeURIComponent(`
+    <svg width="600" height="600" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="glow1" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="rgba(76, 175, 80, 0.3)" stop-opacity="1"/>
+          <stop offset="100%" stop-color="rgba(76, 175, 80, 0)" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="glow2" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="rgba(139, 195, 74, 0.25)" stop-opacity="1"/>
+          <stop offset="100%" stop-color="rgba(139, 195, 74, 0)" stop-opacity="0"/>
+        </radialGradient>
+        <pattern id="forest" x="0" y="0" width="300" height="300" patternUnits="userSpaceOnUse">
+          <circle cx="80" cy="80" r="6" fill="url(#glow1)"/>
+          <circle cx="220" cy="60" r="5" fill="url(#glow2)"/>
+          <circle cx="150" cy="150" r="8" fill="url(#glow1)"/>
+          <circle cx="50" cy="200" r="5" fill="url(#glow2)"/>
+          <path d="M 80,80 Q 120,100 150,150" stroke="rgba(76, 175, 80, 0.12)" stroke-width="1" fill="none"/>
+          <path d="M 220,60 Q 200,120 150,150" stroke="rgba(139, 195, 74, 0.1)" stroke-width="1" fill="none"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#forest)"/>
+    </svg>
+  `)}`;
+
   return (
     <main style={{ 
       minHeight: '100vh',
       backgroundColor: theme.bg,
+      backgroundImage: `url("${forestPattern}")`,
+      backgroundSize: darkMode ? '600px 600px' : '400px 400px',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'repeat',
       transition: 'background-color 0.3s ease',
       width: '100%',
       margin: 0,
       padding: 0,
+      position: 'relative',
     }}>
+      {/* Subtle glowing overlay for dark mode */}
+      {darkMode && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'radial-gradient(circle at 20% 30%, rgba(76, 175, 80, 0.06) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(139, 195, 74, 0.04) 0%, transparent 50%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }} />
+      )}
       <div style={{
         maxWidth: '1600px',
         margin: '0 auto',
@@ -954,21 +1001,25 @@ export default function Network() {
         <div>
           <h1 style={{ 
             margin: 0, 
-            fontSize: '32px',
-            fontWeight: '700',
+            fontSize: 'clamp(28px, 5vw, 36px)',
+            fontWeight: '600',
             color: theme.text,
-            letterSpacing: '-0.5px',
-            transition: 'color 0.3s ease'
+            letterSpacing: '-0.02em',
+            transition: 'color 0.3s ease',
+            textShadow: darkMode 
+              ? '0 0 20px rgba(76, 175, 80, 0.2), 0 0 40px rgba(76, 175, 80, 0.1)' 
+              : 'none',
           }}>
-            Network Analytics 🌿
+            🌲 Network Forest
           </h1>
           <p style={{ 
             margin: '8px 0 0 0',
-            fontSize: '14px',
+            fontSize: '16px',
             color: theme.textSecondary,
-            transition: 'color 0.3s ease'
+            transition: 'color 0.3s ease',
+            fontStyle: 'italic',
           }}>
-            Arkiv-powered mentorship network visualization • Growing in the infinite garden 🌱
+            Knowledge and network are lights in the dark forest guiding the way 🌱
           </p>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
