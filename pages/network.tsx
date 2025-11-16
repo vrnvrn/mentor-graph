@@ -34,11 +34,13 @@ type Session = {
   spaceId: string;
   createdAt: string;
   sessionDate: string;
-  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
   duration?: number;
   notes?: string;
   feedbackKey?: string;
   txHash?: string;
+  mentorConfirmed?: boolean;
+  learnerConfirmed?: boolean;
 };
 
 type WebNode = {
@@ -2660,15 +2662,27 @@ export default function Network() {
 
       {/* Upcoming Meetings Section */}
       {(() => {
-        // Filter sessions to show only upcoming ones (scheduled or in-progress, with sessionDate in the future)
+        // Filter sessions to show only upcoming ones (pending, scheduled, or in-progress, with sessionDate in the future)
+        // Also show cancelled sessions so users can see what was rejected
         const now = Date.now();
         const upcomingSessions = sessions.filter((session) => {
-          if (session.status === 'completed' || session.status === 'cancelled') return false;
+          if (session.status === 'completed') return false;
+          // Show cancelled sessions if they're recent (within last 7 days) so users can see rejections
+          if (session.status === 'cancelled') {
+            if (!session.sessionDate) return false;
+            const sessionTime = new Date(session.sessionDate).getTime();
+            const daysSinceCancelled = (now - sessionTime) / (1000 * 60 * 60 * 24);
+            return daysSinceCancelled <= 7; // Show cancelled sessions from last 7 days
+          }
           if (!session.sessionDate) return false;
           const sessionTime = new Date(session.sessionDate).getTime();
           return sessionTime >= now;
         }).sort((a, b) => {
-          // Sort by sessionDate (earliest first)
+          // Sort by status (pending first, then cancelled, then scheduled/in-progress), then by sessionDate (earliest first)
+          const statusOrder: Record<string, number> = { 'pending': 0, 'cancelled': 1, 'scheduled': 2, 'in-progress': 3 };
+          const aOrder = statusOrder[a.status] ?? 4;
+          const bOrder = statusOrder[b.status] ?? 4;
+          if (aOrder !== bOrder) return aOrder - bOrder;
           const aTime = new Date(a.sessionDate).getTime();
           const bTime = new Date(b.sessionDate).getTime();
           return aTime - bTime;
@@ -2714,6 +2728,8 @@ export default function Network() {
                 const sessionTime = new Date(session.sessionDate);
                 const isToday = sessionTime.toDateString() === new Date().toDateString();
                 const isInProgress = session.status === 'in-progress';
+                const isPending = session.status === 'pending';
+                const isCancelled = session.status === 'cancelled';
                 const timeUntil = sessionTime.getTime() - Date.now();
                 const hoursUntil = Math.floor(timeUntil / (1000 * 60 * 60));
                 const minutesUntil = Math.floor((timeUntil % (1000 * 60 * 60)) / (1000 * 60));
@@ -2721,6 +2737,13 @@ export default function Network() {
                 // Find profile info for mentor and learner
                 const mentorProfile = profiles.find(p => p.wallet.toLowerCase() === session.mentorWallet.toLowerCase());
                 const learnerProfile = profiles.find(p => p.wallet.toLowerCase() === session.learnerWallet.toLowerCase());
+                
+                // Check if current user can confirm/reject
+                const isMentor = userWallet.toLowerCase() === session.mentorWallet.toLowerCase();
+                const isLearner = userWallet.toLowerCase() === session.learnerWallet.toLowerCase();
+                const canConfirm = isPending && (isMentor || isLearner);
+                const userConfirmed = isMentor ? session.mentorConfirmed : (isLearner ? session.learnerConfirmed : false);
+                const otherConfirmed = isMentor ? session.learnerConfirmed : (isLearner ? session.mentorConfirmed : false);
 
                 return (
                   <div 
@@ -2729,9 +2752,9 @@ export default function Network() {
                       padding: '20px', 
                       border: `1px solid ${theme.borderLight}`, 
                       borderRadius: '8px', 
-                      backgroundColor: isInProgress ? (darkMode ? '#2a3a2a' : '#e8f5e9') : theme.hoverBg,
+                      backgroundColor: isInProgress ? (darkMode ? '#2a3a2a' : '#e8f5e9') : isPending ? (darkMode ? '#3a2a1a' : '#fff3e0') : isCancelled ? (darkMode ? '#3a2a2a' : '#ffebee') : theme.hoverBg,
                       transition: 'all 0.2s ease',
-                      borderLeft: `4px solid ${isInProgress ? '#4caf50' : isToday ? '#ffa500' : '#0066cc'}`
+                      borderLeft: `4px solid ${isInProgress ? '#4caf50' : isPending ? '#ffa500' : isCancelled ? '#ef5350' : isToday ? '#ffa500' : '#0066cc'}`
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.boxShadow = theme.shadowHover;
@@ -2769,14 +2792,32 @@ export default function Network() {
                           <span style={{
                             fontSize: '11px',
                             fontWeight: '600',
-                            color: isInProgress ? '#4caf50' : isToday ? '#ffa500' : theme.textSecondary,
-                            backgroundColor: isInProgress ? (darkMode ? '#1a3a1a' : '#e8f5e9') : isToday ? (darkMode ? '#3a2a1a' : '#fff3e0') : theme.hoverBg,
+                            color: isInProgress ? '#4caf50' : isPending ? '#ffa500' : isCancelled ? '#ef5350' : isToday ? '#ffa500' : theme.textSecondary,
+                            backgroundColor: isInProgress ? (darkMode ? '#1a3a1a' : '#e8f5e9') : isPending ? (darkMode ? '#3a2a1a' : '#fff3e0') : isCancelled ? (darkMode ? '#4a2a2a' : '#ffebee') : isToday ? (darkMode ? '#3a2a1a' : '#fff3e0') : theme.hoverBg,
                             padding: '4px 8px',
                             borderRadius: '4px',
                             textTransform: 'uppercase'
                           }}>
-                            {isInProgress ? '🔴 In Progress' : session.status}
+                            {isInProgress ? '🔴 In Progress' : isPending ? '⏳ Pending' : isCancelled ? '❌ Cancelled' : session.status}
                           </span>
+                          {isPending && (
+                            <span style={{
+                              fontSize: '10px',
+                              color: theme.textTertiary,
+                              marginLeft: '8px'
+                            }}>
+                              {userConfirmed ? '✓ You confirmed' : otherConfirmed ? '⏳ Waiting for you' : '⏳ Awaiting confirmation'}
+                            </span>
+                          )}
+                          {isCancelled && (
+                            <span style={{
+                              fontSize: '10px',
+                              color: '#ef5350',
+                              marginLeft: '8px'
+                            }}>
+                              This session was rejected
+                            </span>
+                          )}
                         </div>
                         <div style={{ 
                           fontSize: '18px',
@@ -2916,6 +2957,116 @@ export default function Network() {
                         }}>
                           {session.notes}
                         </div>
+                      </div>
+                    )}
+
+                    {canConfirm && !userConfirmed && (
+                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${theme.borderLight}`, display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={async () => {
+                            if (!userWallet) {
+                              alert('Please connect your wallet first');
+                              return;
+                            }
+                            try {
+                              const res = await fetch('/api/me', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  action: 'confirmSession',
+                                  wallet: userWallet,
+                                  sessionKey: session.key,
+                                  mentorWallet: session.mentorWallet,
+                                  learnerWallet: session.learnerWallet,
+                                  spaceId: session.spaceId,
+                                }),
+                              });
+                              const data = await res.json();
+                              if (!res.ok) {
+                                throw new Error(data.error || 'Failed to confirm session');
+                              }
+                              alert('Session confirmed!');
+                              fetchNetwork();
+                            } catch (err: any) {
+                              console.error('Error confirming session:', err);
+                              alert(`Error: ${err.message || 'Failed to confirm session'}`);
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '10px 16px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            backgroundColor: '#4caf50',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#45a049';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#4caf50';
+                          }}
+                        >
+                          ✓ Confirm
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!userWallet) {
+                              alert('Please connect your wallet first');
+                              return;
+                            }
+                            if (!confirm('Are you sure you want to reject this meeting request?')) {
+                              return;
+                            }
+                            try {
+                              const res = await fetch('/api/me', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  action: 'rejectSession',
+                                  wallet: userWallet,
+                                  sessionKey: session.key,
+                                  mentorWallet: session.mentorWallet,
+                                  learnerWallet: session.learnerWallet,
+                                  spaceId: session.spaceId,
+                                }),
+                              });
+                              const data = await res.json();
+                              if (!res.ok) {
+                                throw new Error(data.error || 'Failed to reject session');
+                              }
+                              alert('Session rejected');
+                              fetchNetwork();
+                            } catch (err: any) {
+                              console.error('Error rejecting session:', err);
+                              alert(`Error: ${err.message || 'Failed to reject session'}`);
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '10px 16px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            backgroundColor: theme.hoverBg,
+                            color: theme.text,
+                            border: `1px solid ${theme.border}`,
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = darkMode ? '#404040' : '#e0e0e0';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = theme.hoverBg;
+                          }}
+                        >
+                          ✗ Reject
+                        </button>
                       </div>
                     )}
 

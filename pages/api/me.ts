@@ -1,7 +1,7 @@
 import { getProfileByWallet, createUserProfile, updateUserProfile } from "../../src/arkiv/profiles"
 import { listAsksForWallet, createAsk } from "../../src/arkiv/asks"
 import { listOffersForWallet, createOffer } from "../../src/arkiv/offers"
-import { listSessionsForWallet, createSession } from "../../src/arkiv/sessions"
+import { listSessionsForWallet, createSession, confirmSession, rejectSession } from "../../src/arkiv/sessions"
 import { listFeedbackForWallet } from "../../src/arkiv/feedback"
 import { CURRENT_WALLET, getPrivateKey } from "../../src/config"
 
@@ -211,6 +211,34 @@ export default async function handler(req: any, res: any) {
           duration: duration ? parseInt(duration, 10) : undefined,
           notes: notes || undefined,
           privateKey: getPrivateKey(),
+        });
+        res.json({ ok: true, key, txHash });
+      } else if (action === 'confirmSession') {
+        const { sessionKey, mentorWallet, learnerWallet, spaceId } = req.body;
+        if (!sessionKey) {
+          return res.status(400).json({ ok: false, error: 'sessionKey is required' });
+        }
+        const { key, txHash } = await confirmSession({
+          sessionKey,
+          confirmedByWallet: wallet,
+          privateKey: getPrivateKey(),
+          mentorWallet,
+          learnerWallet,
+          spaceId,
+        });
+        res.json({ ok: true, key, txHash });
+      } else if (action === 'rejectSession') {
+        const { sessionKey, mentorWallet, learnerWallet, spaceId } = req.body;
+        if (!sessionKey) {
+          return res.status(400).json({ ok: false, error: 'sessionKey is required' });
+        }
+        const { key, txHash } = await rejectSession({
+          sessionKey,
+          rejectedByWallet: wallet,
+          privateKey: getPrivateKey(),
+          mentorWallet,
+          learnerWallet,
+          spaceId,
         });
         res.json({ ok: true, key, txHash });
       } else {
