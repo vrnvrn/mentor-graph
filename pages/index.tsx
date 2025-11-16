@@ -4,14 +4,18 @@ import { connectWallet } from '../src/wallet';
 
 export default function Home() {
   const router = useRouter();
-  // Initialize dark mode from localStorage immediately to avoid flash
-  const [darkMode, setDarkMode] = useState(() => {
+  // Initialize dark mode - use false for SSR, update in useEffect to avoid hydration mismatch
+  const [darkMode, setDarkMode] = useState(false);
+  
+  // Set dark mode from localStorage after mount to avoid hydration mismatch
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('darkMode');
-      return saved === 'true';
+      if (saved === 'true') {
+        setDarkMode(true);
+      }
     }
-    return false;
-  });
+  }, []);
   const [connecting, setConnecting] = useState(false);
   const [loadingExample, setLoadingExample] = useState(false);
   const [error, setError] = useState<string | null>(null);

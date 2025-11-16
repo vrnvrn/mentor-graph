@@ -125,14 +125,18 @@ export default function Network() {
   const [showAnalytics, setShowAnalytics] = useState(true);
   const [requestMeetingModal, setRequestMeetingModal] = useState<{ open: boolean; profile: any | null }>({ open: false, profile: null });
   const [submittingMeeting, setSubmittingMeeting] = useState(false);
-  // Initialize dark mode from localStorage immediately to avoid flash
-  const [darkMode, setDarkMode] = useState(() => {
+  // Initialize dark mode - use false for SSR, update in useEffect to avoid hydration mismatch
+  const [darkMode, setDarkMode] = useState(false);
+  
+  // Set dark mode from localStorage after mount to avoid hydration mismatch
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('darkMode');
-      return saved === 'true';
+      if (saved === 'true') {
+        setDarkMode(true);
+      }
     }
-    return false;
-  });
+  }, []);
   const [showFilters, setShowFilters] = useState(false);
   const [showProfiles, setShowProfiles] = useState(false);
   const [showMeetings, setShowMeetings] = useState(false);

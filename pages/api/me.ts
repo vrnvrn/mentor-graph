@@ -173,26 +173,17 @@ export default async function handler(req: any, res: any) {
         res.json({ ok: true });
       } else if (action === 'createAsk') {
         const { skill, message, expiresIn } = req.body;
-        console.log('[API] createAsk - Received req.body:', { skill, message, expiresIn, expiresInType: typeof expiresIn, fullBody: JSON.stringify(req.body) });
         if (!skill || !message) {
           return res.status(400).json({ ok: false, error: 'skill and message are required' });
         }
-        // Parse expiresIn: handle both number and string, ensure it's a valid positive number
+        // Parse expiresIn: if provided, use it; otherwise undefined (will use default in createAsk)
         let parsedExpiresIn: number | undefined = undefined;
-        console.log('[API] createAsk - Checking expiresIn:', { expiresIn, isUndefined: expiresIn === undefined, isNull: expiresIn === null, isEmpty: expiresIn === '' });
         if (expiresIn !== undefined && expiresIn !== null && expiresIn !== '') {
           const num = typeof expiresIn === 'number' ? expiresIn : Number(expiresIn);
-          console.log('[API] createAsk - Converted number:', num, 'isNaN:', isNaN(num), 'isFinite:', isFinite(num), 'isPositive:', num > 0);
           if (!isNaN(num) && num > 0 && isFinite(num)) {
             parsedExpiresIn = Math.floor(num);
-            console.log('[API] createAsk - Valid parsedExpiresIn:', parsedExpiresIn);
-          } else {
-            console.log('[API] createAsk - Number validation failed');
           }
-        } else {
-          console.log('[API] createAsk - expiresIn is undefined/null/empty, will use default');
         }
-        console.log('[API] createAsk - Final parsedExpiresIn:', parsedExpiresIn, 'calling createAsk with this value');
         const { key, txHash } = await createAsk({
           wallet,
           skill,
@@ -203,26 +194,17 @@ export default async function handler(req: any, res: any) {
         res.json({ ok: true, key, txHash });
       } else if (action === 'createOffer') {
         const { skill, message, availabilityWindow, expiresIn } = req.body;
-        console.log('[API] createOffer - Received req.body:', { skill, message, availabilityWindow, expiresIn, expiresInType: typeof expiresIn, fullBody: JSON.stringify(req.body) });
         if (!skill || !message || !availabilityWindow) {
           return res.status(400).json({ ok: false, error: 'skill, message, and availabilityWindow are required' });
         }
-        // Parse expiresIn: handle both number and string, ensure it's a valid positive number
+        // Parse expiresIn: if provided, use it; otherwise undefined (will use default in createOffer)
         let parsedExpiresIn: number | undefined = undefined;
-        console.log('[API] createOffer - Checking expiresIn:', { expiresIn, isUndefined: expiresIn === undefined, isNull: expiresIn === null, isEmpty: expiresIn === '' });
         if (expiresIn !== undefined && expiresIn !== null && expiresIn !== '') {
           const num = typeof expiresIn === 'number' ? expiresIn : Number(expiresIn);
-          console.log('[API] createOffer - Converted number:', num, 'isNaN:', isNaN(num), 'isFinite:', isFinite(num), 'isPositive:', num > 0);
           if (!isNaN(num) && num > 0 && isFinite(num)) {
             parsedExpiresIn = Math.floor(num);
-            console.log('[API] createOffer - Valid parsedExpiresIn:', parsedExpiresIn);
-          } else {
-            console.log('[API] createOffer - Number validation failed');
           }
-        } else {
-          console.log('[API] createOffer - expiresIn is undefined/null/empty, will use default');
         }
-        console.log('[API] createOffer - Final parsedExpiresIn:', parsedExpiresIn, 'calling createOffer with this value');
         const { key, txHash } = await createOffer({
           wallet,
           skill,
