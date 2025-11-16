@@ -26,6 +26,21 @@ type Offer = {
   txHash?: string;
 };
 
+type Session = {
+  key: string;
+  mentorWallet: string;
+  learnerWallet: string;
+  skill: string;
+  spaceId: string;
+  createdAt: string;
+  sessionDate: string;
+  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
+  duration?: number;
+  notes?: string;
+  feedbackKey?: string;
+  txHash?: string;
+};
+
 type WebNode = {
   id: string;
   type: 'ask' | 'offer';
@@ -82,6 +97,7 @@ export default function Network() {
   const [asks, setAsks] = useState<Ask[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [skillFilter, setSkillFilter] = useState('');
   const [currentFilterSkill, setCurrentFilterSkill] = useState<string>('');
@@ -156,6 +172,7 @@ export default function Network() {
       let filteredAsks = data.asks || [];
       let filteredOffers = data.offers || [];
       let filteredProfiles = data.profiles || [];
+      let allSessions = data.sessions || [];
       
       // TTL filter for asks/offers
       if (filters?.ttl === 'active') {
@@ -269,6 +286,7 @@ export default function Network() {
       setAsks(filteredAsks);
       setOffers(filteredOffers);
       setProfiles(filteredProfiles);
+      setSessions(allSessions);
       setCurrentFilterSkill(filters?.skill || '');
     } catch (err) {
       console.error('Error fetching /api/network:', err);
@@ -2290,6 +2308,312 @@ export default function Network() {
           </div>
         </section>
       )}
+
+      {/* Upcoming Meetings Section */}
+      {(() => {
+        // Filter sessions to show only upcoming ones (scheduled or in-progress, with sessionDate in the future)
+        const now = Date.now();
+        const upcomingSessions = sessions.filter((session) => {
+          if (session.status === 'completed' || session.status === 'cancelled') return false;
+          if (!session.sessionDate) return false;
+          const sessionTime = new Date(session.sessionDate).getTime();
+          return sessionTime >= now;
+        }).sort((a, b) => {
+          // Sort by sessionDate (earliest first)
+          const aTime = new Date(a.sessionDate).getTime();
+          const bTime = new Date(b.sessionDate).getTime();
+          return aTime - bTime;
+        });
+
+        if (upcomingSessions.length === 0) return null;
+
+        return (
+          <section style={{ 
+            marginBottom: '32px', 
+            padding: '28px', 
+            border: `1px solid ${theme.border}`, 
+            borderRadius: '12px',
+            backgroundColor: theme.cardBg,
+            boxShadow: theme.shadow,
+            transition: 'all 0.3s ease'
+          }}>
+            <div style={{ 
+              marginBottom: '24px',
+              paddingBottom: '16px',
+              borderBottom: `2px solid ${theme.borderLight}`
+            }}>
+              <h2 style={{ 
+                margin: 0,
+                fontSize: '22px',
+                fontWeight: '600',
+                color: theme.text,
+                transition: 'color 0.3s ease'
+              }}>
+                Upcoming Meetings ({upcomingSessions.length})
+              </h2>
+              <p style={{ 
+                margin: '8px 0 0 0',
+                fontSize: '14px',
+                color: theme.textSecondary,
+                transition: 'color 0.3s ease'
+              }}>
+                Scheduled and in-progress sessions across the network
+              </p>
+            </div>
+            <div style={{ display: 'grid', gap: '16px' }}>
+              {upcomingSessions.map((session) => {
+                const sessionTime = new Date(session.sessionDate);
+                const isToday = sessionTime.toDateString() === new Date().toDateString();
+                const isInProgress = session.status === 'in-progress';
+                const timeUntil = sessionTime.getTime() - Date.now();
+                const hoursUntil = Math.floor(timeUntil / (1000 * 60 * 60));
+                const minutesUntil = Math.floor((timeUntil % (1000 * 60 * 60)) / (1000 * 60));
+                
+                // Find profile info for mentor and learner
+                const mentorProfile = profiles.find(p => p.wallet.toLowerCase() === session.mentorWallet.toLowerCase());
+                const learnerProfile = profiles.find(p => p.wallet.toLowerCase() === session.learnerWallet.toLowerCase());
+
+                return (
+                  <div 
+                    key={session.key} 
+                    style={{ 
+                      padding: '20px', 
+                      border: `1px solid ${theme.borderLight}`, 
+                      borderRadius: '8px', 
+                      backgroundColor: isInProgress ? (darkMode ? '#2a3a2a' : '#e8f5e9') : theme.hoverBg,
+                      transition: 'all 0.2s ease',
+                      borderLeft: `4px solid ${isInProgress ? '#4caf50' : isToday ? '#ffa500' : '#0066cc'}`
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = theme.shadowHover;
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.borderColor = theme.border;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.borderColor = theme.borderLight;
+                    }}
+                  >
+                    <div style={{ 
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: '12px',
+                      paddingBottom: '12px',
+                      borderBottom: `1px solid ${theme.borderLight}`
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          marginBottom: '8px'
+                        }}>
+                          <strong style={{ 
+                            color: theme.text,
+                            fontSize: '16px',
+                            fontWeight: '600'
+                          }}>
+                            📅 {session.skill || 'Session'}
+                          </strong>
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: isInProgress ? '#4caf50' : isToday ? '#ffa500' : theme.textSecondary,
+                            backgroundColor: isInProgress ? (darkMode ? '#1a3a1a' : '#e8f5e9') : isToday ? (darkMode ? '#3a2a1a' : '#fff3e0') : theme.hoverBg,
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            textTransform: 'uppercase'
+                          }}>
+                            {isInProgress ? '🔴 In Progress' : session.status}
+                          </span>
+                        </div>
+                        <div style={{ 
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          color: theme.text,
+                          marginBottom: '4px'
+                        }}>
+                          {sessionTime.toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </div>
+                        <div style={{ 
+                          fontSize: '16px',
+                          color: theme.textSecondary,
+                          marginBottom: '8px'
+                        }}>
+                          {sessionTime.toLocaleTimeString('en-US', { 
+                            hour: 'numeric', 
+                            minute: '2-digit',
+                            hour12: true 
+                          })}
+                          {session.duration && (
+                            <span style={{ marginLeft: '8px', fontSize: '14px' }}>
+                              • {session.duration} min
+                            </span>
+                          )}
+                        </div>
+                        {timeUntil > 0 && !isInProgress && (
+                          <div style={{ 
+                            fontSize: '13px',
+                            color: isToday ? '#ffa500' : theme.textTertiary,
+                            fontWeight: isToday ? '600' : 'normal'
+                          }}>
+                            {hoursUntil > 0 ? `${hoursUntil}h ${minutesUntil}m` : `${minutesUntil}m`} until start
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '16px',
+                      marginBottom: '12px'
+                    }}>
+                      <div>
+                        <div style={{ 
+                          fontSize: '12px',
+                          color: theme.textSecondary,
+                          marginBottom: '4px',
+                          fontWeight: '500'
+                        }}>
+                          Mentor:
+                        </div>
+                        <div style={{ 
+                          fontSize: '14px',
+                          color: theme.text,
+                          fontWeight: '500'
+                        }}>
+                          {mentorProfile?.displayName || shortenWallet(session.mentorWallet)}
+                        </div>
+                        {mentorProfile?.username && (
+                          <div style={{ 
+                            fontSize: '12px',
+                            color: theme.textTertiary
+                          }}>
+                            @{mentorProfile.username}
+                          </div>
+                        )}
+                        <div style={{ 
+                          fontSize: '11px',
+                          color: theme.textTertiary,
+                          fontFamily: 'monospace',
+                          marginTop: '2px'
+                        }}>
+                          {shortenWallet(session.mentorWallet)}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ 
+                          fontSize: '12px',
+                          color: theme.textSecondary,
+                          marginBottom: '4px',
+                          fontWeight: '500'
+                        }}>
+                          Learner:
+                        </div>
+                        <div style={{ 
+                          fontSize: '14px',
+                          color: theme.text,
+                          fontWeight: '500'
+                        }}>
+                          {learnerProfile?.displayName || shortenWallet(session.learnerWallet)}
+                        </div>
+                        {learnerProfile?.username && (
+                          <div style={{ 
+                            fontSize: '12px',
+                            color: theme.textTertiary
+                          }}>
+                            @{learnerProfile.username}
+                          </div>
+                        )}
+                        <div style={{ 
+                          fontSize: '11px',
+                          color: theme.textTertiary,
+                          fontFamily: 'monospace',
+                          marginTop: '2px'
+                        }}>
+                          {shortenWallet(session.learnerWallet)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {session.notes && (
+                      <div style={{ 
+                        marginBottom: '12px',
+                        padding: '12px',
+                        backgroundColor: theme.cardBg,
+                        borderRadius: '6px',
+                        border: `1px solid ${theme.borderLight}`
+                      }}>
+                        <div style={{ 
+                          fontSize: '12px',
+                          color: theme.textSecondary,
+                          marginBottom: '4px',
+                          fontWeight: '500'
+                        }}>
+                          Notes:
+                        </div>
+                        <div style={{ 
+                          fontSize: '14px',
+                          color: theme.text,
+                          lineHeight: '1.5'
+                        }}>
+                          {session.notes}
+                        </div>
+                      </div>
+                    )}
+
+                    {session.txHash && (
+                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${theme.borderLight}` }}>
+                        <a
+                          href={`https://explorer.mendoza.hoodi.arkiv.network/tx/${session.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ 
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '13px',
+                            color: '#0066cc',
+                            textDecoration: 'none',
+                            fontWeight: '500',
+                            padding: '6px 12px',
+                            backgroundColor: darkMode ? '#1a3a5a' : '#e7f3ff',
+                            borderRadius: '6px',
+                            border: `1px solid ${darkMode ? '#2a5a7a' : '#b3d9ff'}`,
+                            transition: 'all 0.2s ease'
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyToClipboard(session.txHash!);
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = darkMode ? '#2a5a7a' : '#d0e7ff';
+                            e.currentTarget.style.borderColor = darkMode ? '#3a7a9a' : '#80c7ff';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = darkMode ? '#1a3a5a' : '#e7f3ff';
+                            e.currentTarget.style.borderColor = darkMode ? '#2a5a7a' : '#b3d9ff';
+                          }}
+                          title="Click to open in explorer (copies hash to clipboard)">
+                          View on Arkiv Explorer ↗
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* Detailed Lists Below */}
       <div style={{ marginTop: '32px' }}>

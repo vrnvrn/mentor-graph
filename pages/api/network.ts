@@ -1,6 +1,7 @@
 import { listAsks } from "../../src/arkiv/asks"
 import { listOffers } from "../../src/arkiv/offers"
 import { listUserProfiles } from "../../src/arkiv/profiles"
+import { listSessions } from "../../src/arkiv/sessions"
 
 export default async function handler(req: any, res: any) {
   try {
@@ -14,11 +15,13 @@ export default async function handler(req: any, res: any) {
 
     const askOfferParams = skill || spaceId ? { skill, spaceId } : undefined;
     const profileParams = skill || seniority || spaceId ? { skill, seniority, spaceId } : undefined;
+    const sessionParams = skill || spaceId ? { skill, spaceId } : undefined;
 
-    const [asks, offers, profiles] = await Promise.all([
+    const [asks, offers, profiles, sessions] = await Promise.all([
       listAsks(askOfferParams),
       listOffers(askOfferParams),
       listUserProfiles(profileParams),
+      listSessions(sessionParams),
     ]);
 
     // Apply client-side filters that can't be done via Arkiv queries
@@ -32,6 +35,7 @@ export default async function handler(req: any, res: any) {
       asks,
       offers,
       profiles: filteredProfiles,
+      sessions,
     });
   } catch (error: any) {
     console.error('API error:', error);
