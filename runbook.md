@@ -60,6 +60,8 @@ In Progress:
         Note: As entity does not store transaction hash, we need to make workarounds. First workaround is to display a copyable Tx immediately after creation (lost after page refresh).
 - Transparency
     - Added warnings to make it clear to users that information stored on Arkiv is immutable and only editable on the front-end.
+- Life is for learning
+    - Starting to incorporate deeper philosophical design elements to visualize knowledge and network on the individual and network levels
 
 ## Phase 5: Analytics
 
@@ -68,3 +70,10 @@ In Progress:
 - Experiment with filtering & sorting algorithms
 
 Note: Ran into rate limit errors when generating dummy data. Reached out on the Discord for more info, created doc with more information.
+
+## Final Phase: Debugging
+
+In Progress:
+- Checking Arkiv functions and adding console logs to debug sudden TTL issue
+
+Note: As we are starting to experiment with more complex UI/UX design, some Arkiv functions have started to have issues that worked previously. 
