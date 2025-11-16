@@ -102,3 +102,28 @@ npm run dev
 - `src/config.ts` - Environment configuration
 - `src/wallet.ts` - Wallet connection utilities
 - `src/lib/jitsi.ts` - Jitsi meeting generation
+
+## Deployment
+
+### Vercel
+
+1. Connect repository to Vercel
+2. Set environment variables in Vercel dashboard:
+   - `ARKIV_PRIVATE_KEY` (required)
+   - `ARKIV_RPC_URL` (optional)
+   - `ARKIV_WS_URL` (optional)
+   - `JITSI_BASE_URL` (optional)
+3. Deploy automatically on push to main branch
+
+### Troubleshooting Deployment
+
+If updates don't appear after deployment:
+
+1. **Force redeploy** - Vercel dashboard → Deployments → Redeploy (disable build cache)
+2. **Clear build cache** - Settings → Clear Build Cache → Redeploy
+3. **Check build logs** - Verify build completed successfully
+4. **Verify environment variables** - Ensure all required vars are set
+5. **Hard refresh browser** - `Cmd+Shift+R` or `Ctrl+Shift+R`
+6. **Check branch** - Verify correct branch is deployed
+
+See `VERCEL_TROUBLESHOOTING.md` for detailed troubleshooting steps.
