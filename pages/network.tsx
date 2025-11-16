@@ -2101,7 +2101,11 @@ export default function Network() {
                 minWidth: '40px',
                 textAlign: 'center'
               }}>
-                {profiles.length}
+                {(() => {
+                  // Count unique wallets
+                  const uniqueWallets = new Set(profiles.map(p => p.wallet?.toLowerCase()).filter(Boolean));
+                  return uniqueWallets.size;
+                })()}
               </span>
               <span style={{ 
                 fontSize: '20px',
@@ -2115,15 +2119,39 @@ export default function Network() {
           {showProfiles && (
             <div style={{ padding: '0 20px 20px 20px' }}>
               <div style={{ display: 'grid', gap: '16px', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-            {profiles.map((profile) => {
-              // Compute match score based on skill overlap with user
-              const profileSkills = profile.skillsArray || (profile.skills ? profile.skills.split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean) : []);
-              const skillOverlap = userSkills.length > 0 
-                ? profileSkills.filter((ps: string) => userSkills.some((us: string) => ps.includes(us) || us.includes(ps))).length
-                : 0;
-              const matchScore = userSkills.length > 0 
-                ? Math.min(100, (skillOverlap / Math.max(userSkills.length, profileSkills.length)) * 100)
-                : 0;
+            {(() => {
+              // Deduplicate profiles by wallet address, keeping only the most recent one
+              const profileMap = new Map<string, any>();
+              profiles.forEach((profile) => {
+                const wallet = profile.wallet?.toLowerCase() || '';
+                if (!wallet) return;
+                
+                const existing = profileMap.get(wallet);
+                if (!existing) {
+                  profileMap.set(wallet, profile);
+                } else {
+                  // Keep the one with the most recent createdAt
+                  const existingTime = existing.createdAt ? new Date(existing.createdAt).getTime() : 0;
+                  const currentTime = profile.createdAt ? new Date(profile.createdAt).getTime() : 0;
+                  if (currentTime > existingTime) {
+                    profileMap.set(wallet, profile);
+                  }
+                }
+              });
+              
+              const uniqueProfiles = Array.from(profileMap.values());
+              
+              return uniqueProfiles.map((profile) => {
+                const isMe = userWallet && profile.wallet?.toLowerCase() === userWallet.toLowerCase();
+                
+                // Compute match score based on skill overlap with user (only if not "me")
+                const profileSkills = profile.skillsArray || (profile.skills ? profile.skills.split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean) : []);
+                const skillOverlap = !isMe && userSkills.length > 0 
+                  ? profileSkills.filter((ps: string) => userSkills.some((us: string) => ps.includes(us) || us.includes(ps))).length
+                  : 0;
+                const matchScore = !isMe && userSkills.length > 0 
+                  ? Math.min(100, (skillOverlap / Math.max(userSkills.length, profileSkills.length)) * 100)
+                  : 0;
               
               return (
                 <div 
@@ -2134,7 +2162,7 @@ export default function Network() {
                     borderRadius: '8px', 
                     backgroundColor: theme.hoverBg,
                     transition: 'all 0.2s ease',
-                    borderLeft: `4px solid ${matchScore > 50 ? '#4caf50' : matchScore > 25 ? '#ffa500' : theme.border}`
+                    borderLeft: `4px solid ${isMe ? '#0066cc' : matchScore > 50 ? '#4caf50' : matchScore > 25 ? '#ffa500' : theme.border}`
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.boxShadow = theme.shadowHover;
@@ -2165,7 +2193,18 @@ export default function Network() {
                       }}>
                         👤 {profile.displayName || 'Unknown'}
                       </strong>
-                      {matchScore > 0 && (
+                      {isMe ? (
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          color: '#0066cc',
+                          backgroundColor: darkMode ? '#1a3a5a' : '#e7f3ff',
+                          padding: '4px 8px',
+                          borderRadius: '4px'
+                        }}>
+                          me
+                        </span>
+                      ) : matchScore > 0 && (
                         <span style={{
                           fontSize: '11px',
                           fontWeight: '600',
@@ -2425,7 +2464,8 @@ export default function Network() {
                   </div>
                 </div>
               );
-            })}
+              });
+            })()}
               </div>
             </div>
           )}
