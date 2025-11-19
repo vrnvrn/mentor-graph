@@ -208,6 +208,11 @@ export default function Me() {
       if (saved === 'true') {
         setDarkMode(true);
       }
+      // Check mobile on mount and resize
+      setIsMobile(window.innerWidth < 768);
+      const handleResize = () => setIsMobile(window.innerWidth < 768);
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
     }
   }, []);
   const [, setNow] = useState(Date.now());
@@ -215,6 +220,7 @@ export default function Me() {
   const [editingProfile, setEditingProfile] = useState(false);
   const [showArkivWarning, setShowArkivWarning] = useState(false);
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Show warning popup every time the page loads
   useEffect(() => {
@@ -828,10 +834,10 @@ export default function Me() {
           bottom: 0,
           backgroundColor: darkMode ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.4)',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: isMobile ? 'flex-end' : 'center',
           justifyContent: 'center',
           zIndex: 1000,
-          padding: '20px',
+          padding: isMobile ? '0' : '20px',
         }}
         onClick={() => {
           localStorage.setItem('arkiv-warning-dismissed', 'true');
@@ -841,12 +847,18 @@ export default function Me() {
           <div 
             style={{
               backgroundColor: theme.cardBg,
-              borderRadius: '12px',
-              padding: '32px',
-              maxWidth: '600px',
+              borderRadius: isMobile ? '20px 20px 0 0' : '12px',
+              padding: isMobile ? '24px 20px' : '32px',
+              maxWidth: isMobile ? '100%' : '600px',
               width: '100%',
+              maxHeight: isMobile ? '90vh' : '80vh',
+              overflowY: 'auto',
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
               border: `2px solid ${theme.border}`,
+              // Swipe down indicator for mobile
+              ...(isMobile && {
+                borderTop: '4px solid rgba(76, 175, 80, 0.3)',
+              }),
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -858,12 +870,13 @@ export default function Me() {
             }}>
               <h2 style={{
                 margin: 0,
-                fontSize: '28px',
+                fontSize: isMobile ? '22px' : '28px',
                 fontWeight: '600',
                 color: darkMode ? '#90c695' : '#2d7a32',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '10px',
+                flexWrap: isMobile ? 'wrap' : 'nowrap',
               }}>
                 <span>🌱🌿🌸</span>
                 <span>Welcome to the Infinite Garden</span>
@@ -903,9 +916,9 @@ export default function Me() {
 
             <div style={{
               color: theme.text,
-              fontSize: '16px',
+              fontSize: isMobile ? '15px' : '16px',
               lineHeight: '1.7',
-              marginBottom: '24px',
+              marginBottom: isMobile ? '20px' : '24px',
             }}>
               <div style={{ 
                 marginBottom: '24px',

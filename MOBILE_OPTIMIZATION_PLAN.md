@@ -28,6 +28,8 @@ This document outlines a comprehensive engineering plan to optimize MentorGraph 
 | 3.1.2 Mobile-First Tokens | ✅ Completed | Created shared responsive tokens in `src/styles/responsive.ts` (breakpoints, spacing, typography, touch targets) to guide future refactors. |
 | 3.2.1 Touch Interaction Enhancements | ✅ Completed | Added touch/pinch handlers for the network web: pan, drag, pinch-to-zoom, touch target safeguards, `touchAction: 'none'`, plus auto-centering on first load. |
 | 3.3.1 Mobile Layout (Network) | ✅ Completed | Added viewport detection, stacked layout on `<768px`, adjusted padding/heights, responsive analytics sidebar width, smaller nodes. |
+| 3.3.2 Modal Dialog Optimization | ✅ Completed | Updated Request Meeting Modal (network.tsx) and Arkiv Warning Modal (me.tsx) to bottom sheet pattern on mobile. Added `isMobile` state to `/me` page. Form inputs use 16px to prevent iOS zoom. |
+| 3.3.3 Typography Scaling | ✅ Completed (Partial) | Modal form inputs updated to 16px font size. Modal typography scales responsively. Filter form inputs on network page can be updated in next pass. |
 
 ---
 
@@ -402,7 +404,7 @@ const [pressed, setPressed] = useState(false);
 **Priority:** High  
 **Effort:** 6-8 hours
   
-**Status:** ✅ In progress (network page updated for `<768px`)
+**Status:** ✅ Completed (network page fully responsive for `<768px`)
 
 **Implementation:**
 Refactor layouts to stack vertically on mobile:
@@ -445,7 +447,11 @@ useEffect(() => {
 **Priority:** High  
 **Effort:** 2-3 hours
 
+**Status:** ✅ Completed
+
 **Implementation:**
+Updated both Request Meeting Modal (network.tsx) and Arkiv Warning Modal (me.tsx) to use bottom sheet pattern on mobile:
+
 ```typescript
 // Make modals mobile-friendly
 <div style={{
@@ -456,7 +462,7 @@ useEffect(() => {
   bottom: 0,
   backgroundColor: 'rgba(0, 0, 0, 0.5)',
   display: 'flex',
-  alignItems: 'flex-end', // Bottom-aligned on mobile
+  alignItems: isMobile ? 'flex-end' : 'center', // Bottom-aligned on mobile
   justifyContent: 'center',
   zIndex: 1000,
   padding: isMobile ? '0' : '20px',
@@ -479,29 +485,46 @@ useEffect(() => {
 </div>
 ```
 
+**Additional Changes:**
+- Form inputs use 16px font size to prevent iOS zoom
+- Date/time inputs stack vertically on mobile (single column)
+- Typography scales down on mobile (20px headings, 13px body)
+- Added `isMobile` state to `/me` page for modal optimization
+
 **Reasoning:**
 - Bottom sheet pattern is standard on mobile (iOS/Android)
 - Easier to reach with thumb
 - Natural swipe-down gesture to dismiss
 - Prevents overflow on small screens
+- 16px inputs prevent iOS Safari auto-zoom
 
 #### 3.3.3 Typography Scaling
 **Priority:** Medium  
 **Effort:** 2 hours
 
+**Status:** ✅ Completed (partially - input fields updated)
+
 **Implementation:**
-Ensure all text meets minimum size requirements:
+Updated all form input fields to use 16px font size to prevent iOS zoom:
 
 ```typescript
-const mobileTypography = {
-  body: '16px', // Prevents iOS zoom
-  small: '14px', // Minimum readable
-  caption: '12px', // Only for labels, not body text
-  heading1: 'clamp(24px, 5vw, 32px)',
-  heading2: 'clamp(20px, 4vw, 24px)',
-  heading3: 'clamp(18px, 3vw, 20px)',
-};
+// All input fields in modals and forms
+<input
+  style={{
+    fontSize: '16px', // Prevents iOS zoom
+    // ... other styles
+  }}
+/>
 ```
+
+**Completed:**
+- ✅ Request Meeting Modal inputs (text, date, time, number, textarea)
+- ✅ Modal typography scales (20px headings on mobile, 13px body)
+- ✅ Form inputs use 16px minimum
+
+**Remaining:**
+- Filter form inputs on network page (can be done in next pass)
+- General body text scaling (already using clamp() in most places)
 
 **Reasoning:**
 - 16px minimum prevents iOS Safari auto-zoom on input focus

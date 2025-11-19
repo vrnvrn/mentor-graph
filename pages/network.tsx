@@ -2782,10 +2782,10 @@ export default function Network() {
             bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: isMobile ? 'flex-end' : 'center',
             justifyContent: 'center',
             zIndex: 1000,
-            padding: '20px'
+            padding: isMobile ? '0' : '20px'
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
@@ -2796,21 +2796,25 @@ export default function Network() {
           <div
             style={{
               backgroundColor: theme.cardBg,
-              borderRadius: '12px',
-              padding: '32px',
-              maxWidth: '500px',
+              borderRadius: isMobile ? '20px 20px 0 0' : '12px',
+              padding: isMobile ? '24px 20px' : '32px',
+              maxWidth: isMobile ? '100%' : '500px',
               width: '100%',
-              maxHeight: '90vh',
+              maxHeight: isMobile ? '90vh' : '80vh',
               overflowY: 'auto',
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-              border: `1px solid ${theme.border}`
+              border: `1px solid ${theme.border}`,
+              // Swipe down indicator for mobile
+              ...(isMobile && {
+                borderTop: '4px solid rgba(76, 175, 80, 0.3)',
+              })
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ marginBottom: '24px' }}>
+            <div style={{ marginBottom: isMobile ? '20px' : '24px' }}>
               <h2 style={{
                 margin: 0,
-                fontSize: '24px',
+                fontSize: isMobile ? '20px' : '24px',
                 fontWeight: '600',
                 color: theme.text,
                 marginBottom: '8px'
@@ -2819,7 +2823,7 @@ export default function Network() {
               </h2>
               <p style={{
                 margin: 0,
-                fontSize: '14px',
+                fontSize: isMobile ? '13px' : '14px',
                 color: theme.textSecondary
               }}>
                 Schedule a mentorship session with {requestMeetingModal.profile.displayName || shortenWallet(requestMeetingModal.profile.wallet)}
@@ -2930,7 +2934,7 @@ export default function Network() {
                       border: `1px solid ${theme.inputBorder}`,
                       backgroundColor: theme.inputBg,
                       color: theme.text,
-                      fontSize: '14px',
+                      fontSize: '16px', // Prevents iOS zoom
                       transition: 'all 0.2s',
                     }}
                     onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
@@ -2938,7 +2942,7 @@ export default function Network() {
                   />
                 </label>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <span style={{ fontSize: '13px', fontWeight: '500', color: theme.textSecondary }}>Date *</span>
                     <input
@@ -2996,7 +3000,7 @@ export default function Network() {
                       border: `1px solid ${theme.inputBorder}`,
                       backgroundColor: theme.inputBg,
                       color: theme.text,
-                      fontSize: '14px',
+                      fontSize: '16px', // Prevents iOS zoom
                       transition: 'all 0.2s',
                     }}
                     onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
@@ -3016,7 +3020,7 @@ export default function Network() {
                       border: `1px solid ${theme.inputBorder}`,
                       backgroundColor: theme.inputBg,
                       color: theme.text,
-                      fontSize: '14px',
+                      fontSize: '16px', // Prevents iOS zoom
                       fontFamily: 'inherit',
                       resize: 'vertical',
                       transition: 'all 0.2s',
