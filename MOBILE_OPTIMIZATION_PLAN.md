@@ -25,6 +25,7 @@ This document outlines a comprehensive engineering plan to optimize MentorGraph 
 | Phase / Step | Status | Notes |
 | --- | --- | --- |
 | 3.1.1 Viewport Meta Tag | ✅ Completed | Added global viewport meta tag via `pages/_app.tsx` with fallback `_document.tsx` wrapper. Dev server restarted and verified on mobile emulator. |
+| 3.1.2 Mobile-First Tokens | ✅ Completed | Created shared responsive tokens in `src/styles/responsive.ts` (breakpoints, spacing, typography, touch targets) to guide future refactors. |
 
 ---
 
@@ -211,6 +212,8 @@ This document outlines a comprehensive engineering plan to optimize MentorGraph 
 #### 3.1.2 Mobile-First CSS Variables
 **Priority:** High  
 **Effort:** 2 hours
+  
+**Status:** ✅ Completed (responsive tokens defined in `src/styles/responsive.ts`)
 
 **Implementation:**
 Create a responsive design system with CSS variables:
@@ -218,34 +221,30 @@ Create a responsive design system with CSS variables:
 ```typescript
 // src/styles/responsive.ts
 export const breakpoints = {
-  mobile: '320px',
-  mobileLarge: '375px',
-  mobileXL: '414px',
-  tablet: '768px',
-  desktop: '1024px',
-  desktopLarge: '1440px',
-};
+  mobile: 320,
+  tablet: 768,
+  desktop: 1024,
+  desktopLarge: 1440,
+} as const;
 
-export const mobileStyles = {
-  touchTarget: '44px', // Minimum touch target
-  touchTargetRecommended: '48px',
-  spacing: {
-    xs: '4px',
-    sm: '8px',
-    md: '12px',
-    lg: '16px',
-    xl: '24px',
-  },
-  fontSize: {
-    xs: '12px',
-    sm: '14px',
-    base: '16px', // Prevents iOS zoom
-    lg: '18px',
-    xl: '20px',
-    '2xl': '24px',
-    '3xl': '28px',
-  },
-};
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+} as const;
+
+export const typography = {
+  body: '16px',
+  headingMd: 'clamp(20px, 5vw, 24px)',
+  headingLg: 'clamp(24px, 6vw, 32px)',
+} as const;
+
+export const touchTargets = {
+  min: 44,
+  recommended: 48,
+} as const;
 ```
 
 **Reasoning:**
