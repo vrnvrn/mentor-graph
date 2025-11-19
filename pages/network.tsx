@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { iconButtonStyle, compactButtonStyle } from '../src/utils/touchTargets';
 
 type Ask = {
   key: string;
@@ -1145,8 +1146,8 @@ export default function Network() {
           <button
             onClick={() => setDarkMode(!darkMode)}
             style={{
-              padding: '8px 16px',
-              fontSize: '14px',
+              ...iconButtonStyle,
+              fontSize: '18px',
               fontWeight: '500',
               backgroundColor: darkMode ? '#4a4a4a' : '#f0f0f0',
               color: darkMode ? '#ffffff' : '#495057',
@@ -1691,8 +1692,8 @@ export default function Network() {
                       if (mode !== 'all') setFocusedNode(null);
                     }}
                     style={{
-                      padding: '6px 12px',
-                      fontSize: '12px',
+                      ...compactButtonStyle,
+                      fontSize: '13px',
                       fontWeight: '500',
                       borderRadius: '6px',
                       border: `1px solid ${viewMode === mode ? '#0066cc' : theme.border}`,
@@ -1810,8 +1811,9 @@ export default function Network() {
               <button
                 onClick={() => setZoom(prev => Math.min(2, prev + 0.1))}
                 style={{
-                  padding: '6px 12px',
-                  fontSize: '14px',
+                  ...iconButtonStyle,
+                  fontSize: '18px',
+                  fontWeight: '600',
                   backgroundColor: theme.hoverBg,
                   border: `1px solid ${theme.border}`,
                   borderRadius: '4px',
@@ -1833,8 +1835,9 @@ export default function Network() {
               <button
                 onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
                 style={{
-                  padding: '6px 12px',
-                  fontSize: '14px',
+                  ...iconButtonStyle,
+                  fontSize: '18px',
+                  fontWeight: '600',
                   backgroundColor: theme.hoverBg,
                   border: `1px solid ${theme.border}`,
                   borderRadius: '4px',
@@ -1851,8 +1854,8 @@ export default function Network() {
                   setZoom(1);
                 }}
                 style={{
-                  padding: '6px 12px',
-                  fontSize: '11px',
+                  ...compactButtonStyle,
+                  fontSize: '12px',
                   backgroundColor: theme.hoverBg,
                   border: `1px solid ${theme.border}`,
                   borderRadius: '4px',

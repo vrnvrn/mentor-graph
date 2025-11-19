@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { iconButtonStyle } from '../src/utils/touchTargets';
 
 type Profile = {
   key: string;
@@ -753,8 +754,8 @@ export default function Me() {
           <button
             onClick={() => setDarkMode(!darkMode)}
             style={{
-              padding: '8px 16px',
-              fontSize: '14px',
+              ...iconButtonStyle,
+              fontSize: '18px',
               fontWeight: '500',
               backgroundColor: darkMode ? '#4a4a4a' : '#f0f0f0',
               color: darkMode ? '#ffffff' : '#495057',

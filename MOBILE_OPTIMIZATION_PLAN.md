@@ -30,6 +30,7 @@ This document outlines a comprehensive engineering plan to optimize MentorGraph 
 | 3.3.1 Mobile Layout (Network) | ✅ Completed | Added viewport detection, stacked layout on `<768px`, adjusted padding/heights, responsive analytics sidebar width, smaller nodes. |
 | 3.3.2 Modal Dialog Optimization | ✅ Completed | Updated Request Meeting Modal (network.tsx) and Arkiv Warning Modal (me.tsx) to bottom sheet pattern on mobile. Added `isMobile` state to `/me` page. Form inputs use 16px to prevent iOS zoom. |
 | 3.3.3 Typography Scaling | ✅ Completed (Partial) | Modal form inputs updated to 16px font size. Modal typography scales responsively. Filter form inputs on network page can be updated in next pass. |
+| 3.2.2 Touch Target Size Enforcement | ✅ Completed (Critical) | Created `src/utils/touchTargets.ts` utility. Updated dark mode toggles, zoom controls, reset button, and view mode buttons to meet 44x44px minimum. |
 
 ---
 
@@ -346,23 +347,23 @@ useEffect(() => {
 **Priority:** High  
 **Effort:** 3-4 hours
 
+**Status:** ✅ Completed (Critical buttons updated)
+
 **Implementation:**
-Create a utility to ensure minimum touch targets:
+Created utility module `src/utils/touchTargets.ts` with three variants:
+- `touchTargetStyle`: Default buttons (12px 16px padding)
+- `iconButtonStyle`: Icon-only buttons (10px square padding, 44x44px)
+- `compactButtonStyle`: Compact buttons (8px 12px padding, 44x44px)
 
-```typescript
-// src/utils/touchTargets.ts
-export const touchTargetStyle = {
-  minWidth: '44px',
-  minHeight: '44px',
-  padding: '12px 16px', // Ensures 44px minimum even with small content
-};
+**Updated Elements:**
+- ✅ Dark mode toggle buttons (network.tsx, me.tsx) - now 44x44px
+- ✅ Zoom controls (+/- buttons) - now 44x44px
+- ✅ Reset view button - now 44x44px
+- ✅ View mode toggle buttons (All/Matches/Skills/Wallets) - now 44x44px
 
-// Apply to all interactive elements
-<button style={{
-  ...touchTargetStyle,
-  // other styles
-}}>
-```
+**Remaining:**
+- Filter toggle buttons (can be done in next pass)
+- Small badge/button elements (4px 8px padding) - lower priority
 
 **Reasoning:**
 - Meets accessibility guidelines (WCAG 2.2)
