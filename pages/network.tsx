@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { iconButtonStyle, compactButtonStyle } from '../src/utils/touchTargets';
+import { useTouchFeedback, getPressedStyle } from '../src/hooks/useTouchFeedback';
 
 type Ask = {
   key: string;
@@ -98,6 +99,92 @@ function copyToClipboard(text: string) {
 function shortenWallet(wallet: string): string {
   if (!wallet || wallet.length < 10) return wallet;
   return `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
+}
+
+// Dark Mode Toggle Button Component with Touch Feedback
+function DarkModeToggleButton({ darkMode, setDarkMode, theme }: { darkMode: boolean; setDarkMode: (value: boolean) => void; theme: any }) {
+  const { pressed, handlers } = useTouchFeedback();
+  const baseStyle: React.CSSProperties = {
+    ...iconButtonStyle,
+    fontSize: '18px',
+    fontWeight: '500',
+    backgroundColor: darkMode ? '#4a4a4a' : '#f0f0f0',
+    color: darkMode ? '#ffffff' : '#495057',
+    border: '1px solid ' + theme.border,
+    borderRadius: '6px',
+    cursor: 'pointer',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    transition: 'all 0.1s ease',
+  };
+
+  const pressedStyle: Partial<React.CSSProperties> = {
+    backgroundColor: darkMode ? '#5a5a5a' : '#e0e0e0',
+  };
+
+  return (
+    <button
+      onClick={() => setDarkMode(!darkMode)}
+      {...handlers}
+      style={getPressedStyle(baseStyle, pressed, pressedStyle)}
+      title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {darkMode ? '☀️' : '🌙'}
+    </button>
+  );
+}
+
+// Zoom Button Component with Touch Feedback
+function ZoomButton({ onClick, label, title, theme }: { onClick: () => void; label: string; title: string; theme: any }) {
+  const { pressed, handlers } = useTouchFeedback();
+  const baseStyle: React.CSSProperties = {
+    ...iconButtonStyle,
+    fontSize: '18px',
+    fontWeight: '600',
+    backgroundColor: theme.hoverBg,
+    border: `1px solid ${theme.border}`,
+    borderRadius: '4px',
+    color: theme.text,
+    cursor: 'pointer',
+    transition: 'all 0.1s ease',
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      {...handlers}
+      style={getPressedStyle(baseStyle, pressed)}
+      title={title}
+    >
+      {label}
+    </button>
+  );
+}
+
+// Reset Button Component with Touch Feedback
+function ResetButton({ onClick, theme }: { onClick: () => void; theme: any }) {
+  const { pressed, handlers } = useTouchFeedback();
+  const baseStyle: React.CSSProperties = {
+    ...compactButtonStyle,
+    fontSize: '12px',
+    backgroundColor: theme.hoverBg,
+    border: `1px solid ${theme.border}`,
+    borderRadius: '4px',
+    color: theme.text,
+    cursor: 'pointer',
+    marginTop: '4px',
+    transition: 'all 0.1s ease',
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      {...handlers}
+      style={getPressedStyle(baseStyle, pressed)}
+      title="Reset view"
+    >
+      Reset
+    </button>
+  );
 }
 
 export default function Network() {
@@ -1143,30 +1230,7 @@ export default function Network() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            style={{
-              ...iconButtonStyle,
-              fontSize: '18px',
-              fontWeight: '500',
-              backgroundColor: darkMode ? '#4a4a4a' : '#f0f0f0',
-              color: darkMode ? '#ffffff' : '#495057',
-              border: '1px solid ' + theme.border,
-              borderRadius: '6px',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = darkMode ? '#5a5a5a' : '#e0e0e0';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = darkMode ? '#4a4a4a' : '#f0f0f0';
-            }}
-            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {darkMode ? '☀️' : '🌙'}
-          </button>
+          <DarkModeToggleButton darkMode={darkMode} setDarkMode={setDarkMode} theme={theme} />
           <button
             onClick={() => setShowAnalytics(!showAnalytics)}
             style={{
@@ -1808,22 +1872,12 @@ export default function Network() {
               border: `1px solid ${theme.border}`,
               boxShadow: theme.shadow
             }}>
-              <button
+              <ZoomButton
                 onClick={() => setZoom(prev => Math.min(2, prev + 0.1))}
-                style={{
-                  ...iconButtonStyle,
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  backgroundColor: theme.hoverBg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  cursor: 'pointer'
-                }}
+                label="+"
                 title="Zoom in"
-              >
-                +
-              </button>
+                theme={theme}
+              />
               <div style={{
                 padding: '4px 8px',
                 fontSize: '12px',
@@ -1832,41 +1886,19 @@ export default function Network() {
               }}>
                 {Math.round(zoom * 100)}%
               </div>
-              <button
+              <ZoomButton
                 onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
-                style={{
-                  ...iconButtonStyle,
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  backgroundColor: theme.hoverBg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  cursor: 'pointer'
-                }}
+                label="−"
                 title="Zoom out"
-              >
-                −
-              </button>
-              <button
+                theme={theme}
+              />
+              <ResetButton
                 onClick={() => {
                   setPanOffset({ x: 0, y: 0 });
                   setZoom(1);
                 }}
-                style={{
-                  ...compactButtonStyle,
-                  fontSize: '12px',
-                  backgroundColor: theme.hoverBg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  cursor: 'pointer',
-                  marginTop: '4px'
-                }}
-                title="Reset view"
-              >
-                Reset
-              </button>
+                theme={theme}
+              />
             </div>
 
             {/* Render nodes */}

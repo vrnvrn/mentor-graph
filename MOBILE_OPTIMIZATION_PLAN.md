@@ -31,6 +31,7 @@ This document outlines a comprehensive engineering plan to optimize MentorGraph 
 | 3.3.2 Modal Dialog Optimization | ✅ Completed | Updated Request Meeting Modal (network.tsx) and Arkiv Warning Modal (me.tsx) to bottom sheet pattern on mobile. Added `isMobile` state to `/me` page. Form inputs use 16px to prevent iOS zoom. |
 | 3.3.3 Typography Scaling | ✅ Completed (Partial) | Modal form inputs updated to 16px font size. Modal typography scales responsively. Filter form inputs on network page can be updated in next pass. |
 | 3.2.2 Touch Target Size Enforcement | ✅ Completed (Critical) | Created `src/utils/touchTargets.ts` utility. Updated dark mode toggles, zoom controls, reset button, and view mode buttons to meet 44x44px minimum. |
+| 3.2.3 Touch Feedback & Hover Alternatives | ✅ Completed (Critical) | Created `src/hooks/useTouchFeedback.ts` hook. Updated dark mode toggles, zoom controls, and reset button with touch feedback. Created reusable button components. |
 
 ---
 
@@ -374,30 +375,30 @@ Created utility module `src/utils/touchTargets.ts` with three variants:
 **Priority:** Medium  
 **Effort:** 2 hours
 
+**Status:** ✅ Completed (Critical buttons updated)
+
 **Implementation:**
-Replace hover-only states with active/pressed states:
+Created reusable hook `src/hooks/useTouchFeedback.ts` that provides:
+- `useTouchFeedback()`: Hook that returns `pressed` state and event handlers
+- `getPressedStyle()`: Helper to apply pressed styles conditionally
 
-```typescript
-const [pressed, setPressed] = useState(false);
+**Updated Elements:**
+- ✅ Dark mode toggle buttons (network.tsx, me.tsx) - now provide touch feedback
+- ✅ Zoom controls (+/- buttons) - now provide touch feedback
+- ✅ Reset view button - now provides touch feedback
+- ✅ Created reusable `DarkModeToggleButton`, `ZoomButton`, `ResetButton` components
 
-<button
-  onTouchStart={() => setPressed(true)}
-  onTouchEnd={() => setPressed(false)}
-  onMouseDown={() => setPressed(true)}
-  onMouseUp={() => setPressed(false)}
-  onMouseLeave={() => setPressed(false)}
-  style={{
-    backgroundColor: pressed ? '#0052a3' : '#0066cc',
-    transform: pressed ? 'scale(0.98)' : 'scale(1)',
-    transition: 'all 0.1s ease',
-  }}
->
-```
+**How it works:**
+- Uses `onTouchStart`/`onTouchEnd` for touch devices
+- Uses `onMouseDown`/`onMouseUp`/`onMouseLeave` for mouse devices
+- Applies scale transform (0.98) and opacity change when pressed
+- Works on both touch and mouse, providing consistent feedback
 
 **Reasoning:**
 - Provides visual feedback on touch devices
 - Hover states don't work on touch screens
 - Active states work on both mouse and touch
+- Reusable hook makes it easy to add to more buttons in the future
 
 ### 3.3 Phase 3: Responsive Layout Optimization
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { iconButtonStyle } from '../src/utils/touchTargets';
+import { useTouchFeedback, getPressedStyle } from '../src/hooks/useTouchFeedback';
 
 type Profile = {
   key: string;
@@ -190,6 +191,38 @@ function ImmutableCaution({ darkMode }: { darkMode: boolean }) {
       <span style={{ fontSize: '12px' }}>🌱</span>
       <span>caution: immutable and owned by you</span>
     </div>
+  );
+}
+
+// Dark Mode Toggle Button Component with Touch Feedback
+function DarkModeToggleButton({ darkMode, setDarkMode, theme }: { darkMode: boolean; setDarkMode: (value: boolean) => void; theme: any }) {
+  const { pressed, handlers } = useTouchFeedback();
+  const baseStyle: React.CSSProperties = {
+    ...iconButtonStyle,
+    fontSize: '18px',
+    fontWeight: '500',
+    backgroundColor: darkMode ? '#4a4a4a' : '#f0f0f0',
+    color: darkMode ? '#ffffff' : '#495057',
+    border: `1px solid ${theme.border}`,
+    borderRadius: '6px',
+    cursor: 'pointer',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    transition: 'all 0.1s ease',
+  };
+
+  const pressedStyle: Partial<React.CSSProperties> = {
+    backgroundColor: darkMode ? '#5a5a5a' : '#e0e0e0',
+  };
+
+  return (
+    <button
+      onClick={() => setDarkMode(!darkMode)}
+      {...handlers}
+      style={getPressedStyle(baseStyle, pressed, pressedStyle)}
+      title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {darkMode ? '☀️' : '🌙'}
+    </button>
   );
 }
 
@@ -751,30 +784,7 @@ export default function Me() {
           🌲 My Garden
         </h1>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            style={{
-              ...iconButtonStyle,
-              fontSize: '18px',
-              fontWeight: '500',
-              backgroundColor: darkMode ? '#4a4a4a' : '#f0f0f0',
-              color: darkMode ? '#ffffff' : '#495057',
-              border: `1px solid ${theme.border}`,
-              borderRadius: '6px',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = darkMode ? '#5a5a5a' : '#e0e0e0';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = darkMode ? '#4a4a4a' : '#f0f0f0';
-            }}
-            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {darkMode ? '☀️' : '🌙'}
-          </button>
+          <DarkModeToggleButton darkMode={darkMode} setDarkMode={setDarkMode} theme={theme} />
           <button
             onClick={() => router.push('/network')}
             style={{
