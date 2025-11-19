@@ -1357,7 +1357,7 @@ export default function Network() {
                   border: `1px solid ${theme.inputBorder}`,
                   backgroundColor: theme.inputBg,
                   color: theme.text,
-                  fontSize: '14px',
+                  fontSize: '16px', // Prevents iOS zoom
                   transition: 'all 0.2s',
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
@@ -1378,7 +1378,7 @@ export default function Network() {
                   border: `1px solid ${theme.inputBorder}`,
                   backgroundColor: theme.inputBg,
                   color: theme.text,
-                  fontSize: '14px',
+                  fontSize: '16px', // Prevents iOS zoom
                   transition: 'all 0.2s',
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
@@ -1395,7 +1395,7 @@ export default function Network() {
                   padding: '8px 12px', 
                   borderRadius: '6px', 
                   border: `1px solid ${theme.inputBorder}`,
-                  fontSize: '14px',
+                  fontSize: '16px', // Prevents iOS zoom
                   backgroundColor: theme.inputBg,
                   color: theme.text,
                   cursor: 'pointer',
@@ -1421,7 +1421,7 @@ export default function Network() {
                   padding: '8px 12px', 
                   borderRadius: '6px', 
                   border: `1px solid ${theme.inputBorder}`,
-                  fontSize: '14px',
+                  fontSize: '16px', // Prevents iOS zoom
                   backgroundColor: theme.inputBg,
                   color: theme.text,
                   cursor: 'pointer',
@@ -1445,7 +1445,7 @@ export default function Network() {
                   padding: '8px 12px', 
                   borderRadius: '6px', 
                   border: `1px solid ${theme.inputBorder}`,
-                  fontSize: '14px',
+                  fontSize: '16px', // Prevents iOS zoom
                   backgroundColor: theme.inputBg,
                   color: theme.text,
                   cursor: 'pointer',
@@ -1476,7 +1476,7 @@ export default function Network() {
                   border: `1px solid ${theme.inputBorder}`,
                   backgroundColor: theme.inputBg,
                   color: theme.text,
-                  fontSize: '14px',
+                  fontSize: '16px', // Prevents iOS zoom
                   transition: 'all 0.2s',
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
@@ -1497,7 +1497,7 @@ export default function Network() {
                   border: `1px solid ${theme.inputBorder}`,
                   backgroundColor: theme.inputBg,
                   color: theme.text,
-                  fontSize: '14px',
+                  fontSize: '16px', // Prevents iOS zoom
                   transition: 'all 0.2s',
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
@@ -1519,7 +1519,7 @@ export default function Network() {
                   border: `1px solid ${theme.inputBorder}`,
                   backgroundColor: theme.inputBg,
                   color: theme.text,
-                  fontSize: '14px',
+                  fontSize: '16px', // Prevents iOS zoom
                   transition: 'all 0.2s',
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
@@ -1541,7 +1541,7 @@ export default function Network() {
                   border: `1px solid ${theme.inputBorder}`,
                   backgroundColor: theme.inputBg,
                   color: theme.text,
-                  fontSize: '14px',
+                  fontSize: '16px', // Prevents iOS zoom
                   transition: 'all 0.2s',
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
@@ -1568,7 +1568,7 @@ export default function Network() {
                   border: `1px solid ${theme.inputBorder}`,
                   backgroundColor: theme.inputBg,
                   color: theme.text,
-                  fontSize: '14px',
+                  fontSize: '16px', // Prevents iOS zoom
                   transition: 'all 0.2s',
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
@@ -1592,7 +1592,7 @@ export default function Network() {
                   border: `1px solid ${theme.inputBorder}`,
                   backgroundColor: theme.inputBg,
                   color: theme.text,
-                  fontSize: '14px',
+                  fontSize: '16px', // Prevents iOS zoom
                   transition: 'all 0.2s',
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}
@@ -1616,7 +1616,7 @@ export default function Network() {
                   border: `1px solid ${theme.inputBorder}`,
                   backgroundColor: theme.inputBg,
                   color: theme.text,
-                  fontSize: '14px',
+                  fontSize: '16px', // Prevents iOS zoom
                   transition: 'all 0.2s',
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#0066cc'}

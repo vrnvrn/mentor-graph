@@ -29,7 +29,7 @@ This document outlines a comprehensive engineering plan to optimize MentorGraph 
 | 3.2.1 Touch Interaction Enhancements | ✅ Completed | Added touch/pinch handlers for the network web: pan, drag, pinch-to-zoom, touch target safeguards, `touchAction: 'none'`, plus auto-centering on first load. |
 | 3.3.1 Mobile Layout (Network) | ✅ Completed | Added viewport detection, stacked layout on `<768px`, adjusted padding/heights, responsive analytics sidebar width, smaller nodes. |
 | 3.3.2 Modal Dialog Optimization | ✅ Completed | Updated Request Meeting Modal (network.tsx) and Arkiv Warning Modal (me.tsx) to bottom sheet pattern on mobile. Added `isMobile` state to `/me` page. Form inputs use 16px to prevent iOS zoom. |
-| 3.3.3 Typography Scaling | ✅ Completed (Partial) | Modal form inputs updated to 16px font size. Modal typography scales responsively. Filter form inputs on network page can be updated in next pass. |
+| 3.3.3 Typography Scaling | ✅ Completed | All form inputs (modals and filters) updated to 16px font size to prevent iOS zoom. Modal typography scales responsively. |
 | 3.2.2 Touch Target Size Enforcement | ✅ Completed (Critical) | Created `src/utils/touchTargets.ts` utility. Updated dark mode toggles, zoom controls, reset button, and view mode buttons to meet 44x44px minimum. |
 | 3.2.3 Touch Feedback & Hover Alternatives | ✅ Completed (Critical) | Created `src/hooks/useTouchFeedback.ts` hook. Updated dark mode toggles, zoom controls, and reset button with touch feedback. Created reusable button components. |
 
@@ -504,7 +504,7 @@ Updated both Request Meeting Modal (network.tsx) and Arkiv Warning Modal (me.tsx
 **Priority:** Medium  
 **Effort:** 2 hours
 
-**Status:** ✅ Completed (partially - input fields updated)
+**Status:** ✅ Completed
 
 **Implementation:**
 Updated all form input fields to use 16px font size to prevent iOS zoom:
@@ -522,16 +522,14 @@ Updated all form input fields to use 16px font size to prevent iOS zoom:
 **Completed:**
 - ✅ Request Meeting Modal inputs (text, date, time, number, textarea)
 - ✅ Modal typography scales (20px headings on mobile, 13px body)
-- ✅ Form inputs use 16px minimum
-
-**Remaining:**
-- Filter form inputs on network page (can be done in next pass)
-- General body text scaling (already using clamp() in most places)
+- ✅ Filter form inputs on network page (all text inputs, number inputs, and select elements)
+- ✅ Form inputs use 16px minimum across the app
 
 **Reasoning:**
 - 16px minimum prevents iOS Safari auto-zoom on input focus
 - Improves readability on small screens
 - Maintains hierarchy across screen sizes
+- Consistent experience across all forms
 
 ### 3.4 Phase 4: Performance Optimization
 
