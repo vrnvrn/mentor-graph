@@ -27,6 +27,7 @@ This document outlines a comprehensive engineering plan to optimize MentorGraph 
 | 3.1.1 Viewport Meta Tag | ✅ Completed | Added global viewport meta tag via `pages/_app.tsx` with fallback `_document.tsx` wrapper. Dev server restarted and verified on mobile emulator. |
 | 3.1.2 Mobile-First Tokens | ✅ Completed | Created shared responsive tokens in `src/styles/responsive.ts` (breakpoints, spacing, typography, touch targets) to guide future refactors. |
 | 3.2.1 Touch Interaction Enhancements | ✅ Completed | Added touch/pinch handlers for the network web: pan, drag, pinch-to-zoom, touch target safeguards, `touchAction: 'none'`, plus auto-centering on first load. |
+| 3.3.1 Mobile Layout (Network) | ✅ Completed | Added viewport detection, stacked layout on `<768px`, adjusted padding/heights, responsive analytics sidebar width, smaller nodes. |
 
 ---
 
@@ -400,35 +401,37 @@ const [pressed, setPressed] = useState(false);
 #### 3.3.1 Mobile-First Layout System
 **Priority:** High  
 **Effort:** 6-8 hours
+  
+**Status:** ✅ In progress (network page updated for `<768px`)
 
 **Implementation:**
 Refactor layouts to stack vertically on mobile:
 
 ```typescript
 // pages/network.tsx
-const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+const [isMobile, setIsMobile] = useState(false);
+useEffect(() => {
+  const updateViewport = () => setIsMobile(window.innerWidth < 768);
+  updateViewport();
+  window.addEventListener('resize', updateViewport);
+  return () => window.removeEventListener('resize', updateViewport);
+}, []);
 
+// Layout wrapper
 <div style={{
   display: 'flex',
   flexDirection: isMobile ? 'column' : 'row',
   gap: isMobile ? '16px' : '24px',
 }}>
-  {/* Analytics sidebar */}
+  <section style={{ flex: 1, padding: isMobile ? '16px' : '24px' }}>
+    {/* Network web */}
+  </section>
   <aside style={{
     width: isMobile ? '100%' : '320px',
-    order: isMobile ? 2 : 1, // Show graph first on mobile
+    padding: isMobile ? '16px' : '24px',
   }}>
-    {/* Analytics content */}
+    {/* Analytics */}
   </aside>
-  
-  {/* Network graph */}
-  <div style={{
-    width: isMobile ? '100%' : 'calc(100% - 344px)',
-    order: isMobile ? 1 : 2,
-    minHeight: isMobile ? '400px' : '600px',
-  }}>
-    {/* Graph content */}
-  </div>
 </div>
 ```
 
@@ -436,6 +439,7 @@ const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 - Prioritizes network graph on mobile (primary content)
 - Analytics sidebar stacks below (secondary content)
 - Reduces horizontal scrolling
+- Smaller node sizes and reduced padding prevent overflow
 
 #### 3.3.2 Modal Dialog Optimization
 **Priority:** High  

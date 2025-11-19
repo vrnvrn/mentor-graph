@@ -160,6 +160,18 @@ export default function Network() {
   const [clickedNodeId, setClickedNodeId] = useState<string | null>(null);
   const [pinchStartDistance, setPinchStartDistance] = useState<number | null>(null);
   const [pinchStartZoom, setPinchStartZoom] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const updateViewport = () => {
+      if (typeof window !== 'undefined') {
+        setIsMobile(window.innerWidth < 768);
+      }
+    };
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
 
   useEffect(() => {
     // Get connected wallet from localStorage (same as /me page)
@@ -1621,27 +1633,35 @@ export default function Network() {
       </section>
 
       {/* Main Content: Web Visualization + Analytics Sidebar */}
-      <div style={{ display: 'flex', gap: '24px', position: 'relative', marginBottom: '32px' }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: isMobile ? '16px' : '24px', 
+        position: 'relative', 
+        marginBottom: isMobile ? '24px' : '32px' 
+      }}>
         {/* Web Visualization */}
-        <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ flex: 1, position: 'relative', width: '100%' }}>
           <div style={{ 
             border: `1px solid ${darkMode ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.2)'}`, 
             borderRadius: '12px', 
             backgroundColor: darkMode ? '#0a0a0a' : '#1a1a1a',
-            padding: '24px',
-            minHeight: '640px',
+            padding: isMobile ? '16px' : '24px',
+            minHeight: isMobile ? '480px' : '640px',
             position: 'relative',
             overflow: 'hidden',
             boxShadow: darkMode ? '0 0 30px rgba(76, 175, 80, 0.2), inset 0 0 60px rgba(76, 175, 80, 0.05)' : '0 0 20px rgba(76, 175, 80, 0.15)',
             transition: 'all 0.3s ease'
           }}>
             <div style={{ 
-              marginBottom: '16px',
-              paddingBottom: '16px',
+              marginBottom: isMobile ? '12px' : '16px',
+              paddingBottom: isMobile ? '12px' : '16px',
               borderBottom: `1px solid ${darkMode ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.15)'}`,
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
+              flexDirection: isMobile ? 'column' : 'row',
+              justifyContent: isMobile ? 'flex-start' : 'space-between',
+              alignItems: isMobile ? 'flex-start' : 'center',
+              gap: isMobile ? '12px' : '0'
             }}>
               <div>
                 <h2 style={{ 
@@ -1700,11 +1720,11 @@ export default function Network() {
             </div>
             <svg 
               width="100%" 
-              height="600" 
+              height={isMobile ? 480 : 600} 
               style={{ 
                 position: 'absolute', 
-                top: '80px', 
-                left: '24px', 
+                top: isMobile ? '72px' : '80px', 
+                left: isMobile ? '16px' : '24px', 
                 pointerEvents: 'none',
                 zIndex: 0
               }}
@@ -1775,8 +1795,8 @@ export default function Network() {
             {/* Zoom Controls */}
             <div style={{
               position: 'absolute',
-              top: '90px',
-              right: '24px',
+              top: isMobile ? '78px' : '90px',
+              right: isMobile ? '12px' : '24px',
               zIndex: 100,
               display: 'flex',
               flexDirection: 'column',
@@ -1852,8 +1872,8 @@ export default function Network() {
               style={{ 
                 position: 'relative', 
                 width: '100%', 
-                height: '600px', 
-                marginTop: '16px',
+                height: isMobile ? '480px' : '600px', 
+                marginTop: isMobile ? '12px' : '16px',
                 cursor: panning ? 'grabbing' : (draggingNode ? 'grabbing' : 'grab'),
                 overflow: 'hidden',
                 touchAction: 'none'
@@ -1894,8 +1914,8 @@ export default function Network() {
                       left: `${transformedX}px`,
                       top: `${transformedY}px`,
                       transform: `translate(-50%, -50%) scale(${zoom})`,
-                      width: '120px',
-                      height: '120px',
+                      width: isMobile ? '96px' : '120px',
+                      height: isMobile ? '96px' : '120px',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -2004,13 +2024,13 @@ export default function Network() {
         {/* Analytics Sidebar */}
         {showAnalytics && (
           <div style={{ 
-            width: '320px', 
-            padding: '24px', 
+            width: isMobile ? '100%' : '320px', 
+            padding: isMobile ? '16px' : '24px', 
             border: `1px solid ${theme.border}`, 
             borderRadius: '12px',
             backgroundColor: theme.cardBg,
-            maxHeight: '640px',
-            overflowY: 'auto',
+            maxHeight: isMobile ? '100%' : '640px',
+            overflowY: isMobile ? 'visible' : 'auto',
             boxShadow: theme.shadow,
             transition: 'all 0.3s ease'
           }}>
