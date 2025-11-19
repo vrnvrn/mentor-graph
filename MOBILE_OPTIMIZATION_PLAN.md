@@ -26,7 +26,7 @@ This document outlines a comprehensive engineering plan to optimize MentorGraph 
 | --- | --- | --- |
 | 3.1.1 Viewport Meta Tag | ✅ Completed | Added global viewport meta tag via `pages/_app.tsx` with fallback `_document.tsx` wrapper. Dev server restarted and verified on mobile emulator. |
 | 3.1.2 Mobile-First Tokens | ✅ Completed | Created shared responsive tokens in `src/styles/responsive.ts` (breakpoints, spacing, typography, touch targets) to guide future refactors. |
-| 3.2.1 Touch Interaction Enhancements | ✅ Completed | Added touch/pinch handlers for the network web: pan, drag, pinch-to-zoom, touch target safeguards, `touchAction: 'none'`. |
+| 3.2.1 Touch Interaction Enhancements | ✅ Completed | Added touch/pinch handlers for the network web: pan, drag, pinch-to-zoom, touch target safeguards, `touchAction: 'none'`, plus auto-centering on first load. |
 
 ---
 
@@ -301,12 +301,43 @@ const handleTouchEndContainer = (e: React.TouchEvent<HTMLDivElement>) => {
   }
   setPinchStartDistance(null);
 };
+
+// Center view on initial load
+const [hasCenteredView, setHasCenteredView] = useState(false);
+
+useEffect(() => {
+  if (!hasCenteredView && displayedNodes.length > 0) {
+    setTimeout(() => {
+      const container = document.querySelector('[data-container]') as HTMLElement;
+      if (!container) return;
+      const positions = displayedNodes.map(node =>
+        nodePositions[node.id] || { x: node.x, y: node.y }
+      );
+      if (positions.length === 0) return;
+
+      const minX = Math.min(...positions.map(p => p.x));
+      const maxX = Math.max(...positions.map(p => p.x));
+      const minY = Math.min(...positions.map(p => p.y));
+      const maxY = Math.max(...positions.map(p => p.y));
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      const rect = container.getBoundingClientRect();
+
+      setPanOffset({
+        x: rect.width / 2 - centerX,
+        y: rect.height / 2 - centerY,
+      });
+      setHasCenteredView(true);
+    }, 100);
+  }
+}, [displayedNodes, hasCenteredView, nodePositions]);
 ```
 
 **Reasoning:**
 - Enables mobile users to interact with network graph
 - Pinch-to-zoom is expected behavior for graph visualizations
 - Prevents default scrolling to avoid conflicts
+- Auto-centering ensures the network is visible immediately on first load
 
 #### 3.2.2 Touch Target Size Enforcement
 **Priority:** High  
