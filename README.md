@@ -1,7 +1,7 @@
 # MentorGraph
 Early groundwork for p2p mentorship built on Arkiv. More once the basics are alive. 🌱
 
-We are tracking our developer experience with Arkiv in our [runbook](./docs/runbook.md).
+We are tracking our developer experience with Arkiv in our [runbook](./docs/development/runbook.md).
 
 # Overview
 MentorGraph is an on-chain, p2p mentorship and trust-graph layer built on Arkiv.
@@ -42,7 +42,7 @@ We aim to build p2p tools for mentorship, knowledge exchange, learning, and grow
 ## Notes
 The mentorship graph is stored directly in Arkiv, not in local state.
 The UI is built around querying Arkiv as a dynamic knowledge graph.
-The developer experience report in runbook.md documents the friction points, RPC issues, ergonomics of the SDK, and areas where Arkiv can improve.
+The developer experience report in [runbook.md](./docs/development/runbook.md) documents the friction points, RPC issues, ergonomics of the SDK, and areas where Arkiv can improve.
 
 # Tech Stack
 
@@ -102,6 +102,8 @@ npm run dev
 - `src/config.ts` - Environment configuration
 - `src/wallet.ts` - Wallet connection utilities
 - `src/lib/jitsi.ts` - Jitsi meeting generation
+- `docs/` - Documentation (guides, architecture, development notes)
+- `examples/basic/` - Basic Arkiv usage examples
 
 ## Deployment
 
@@ -126,4 +128,4 @@ If updates don't appear after deployment:
 5. **Hard refresh browser** - `Cmd+Shift+R` or `Ctrl+Shift+R`
 6. **Check branch** - Verify correct branch is deployed
 
-See `VERCEL_TROUBLESHOOTING.md` for detailed troubleshooting steps.
+See [troubleshooting guide](./docs/development/troubleshooting.md) for detailed troubleshooting steps.
