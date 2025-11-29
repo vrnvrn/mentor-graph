@@ -123,7 +123,7 @@ export async function listOffers(params?: { skill?: string; spaceId?: string }):
     }
   });
 
-  let offers = result.entities.map((entity: any) => {
+  let offers = offerResult.entities.map((entity: any) => {
     let payload: any = {};
     try {
       if (entity.payload) {
@@ -172,7 +172,9 @@ export async function listOffers(params?: { skill?: string; spaceId?: string }):
 export async function listOffersForWallet(wallet: string): Promise<Offer[]> {
   const publicClient = getPublicClient();
   const query = publicClient.buildQuery();
-  const [result, txHashResult] = await Promise.all([
+  
+  // Use Promise.allSettled to handle timeouts gracefully
+  const [result, txHashResult] = await Promise.allSettled([
     query
       .where(eq('type', 'offer'))
       .where(eq('wallet', wallet))
@@ -189,8 +191,19 @@ export async function listOffersForWallet(wallet: string): Promise<Offer[]> {
       .fetch(),
   ]);
 
+  // Handle failures gracefully
+  const offerResult = result.status === 'fulfilled' ? result.value : { entities: [] };
+  const txHashResultValue = txHashResult.status === 'fulfilled' ? txHashResult.value : { entities: [] };
+  
+  if (result.status === 'rejected') {
+    console.error('Error fetching offers for wallet:', result.reason);
+  }
+  if (txHashResult.status === 'rejected') {
+    console.error('Error fetching offer_txhash for wallet:', txHashResult.reason);
+  }
+
   const txHashMap: Record<string, string> = {};
-  txHashResult.entities.forEach((entity: any) => {
+  txHashResultValue.entities.forEach((entity: any) => {
     const attrs = entity.attributes || {};
     const getAttr = (key: string): string => {
       if (Array.isArray(attrs)) {
@@ -220,7 +233,7 @@ export async function listOffersForWallet(wallet: string): Promise<Offer[]> {
     }
   });
 
-  return result.entities.map((entity: any) => {
+  return offerResult.entities.map((entity: any) => {
     let payload: any = {};
     try {
       if (entity.payload) {
