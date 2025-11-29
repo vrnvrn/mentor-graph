@@ -167,7 +167,9 @@ export async function listAsks(params?: { skill?: string; spaceId?: string }): P
 export async function listAsksForWallet(wallet: string): Promise<Ask[]> {
   const publicClient = getPublicClient();
   const query = publicClient.buildQuery();
-  const [result, txHashResult] = await Promise.all([
+  
+  // Use Promise.allSettled to handle timeouts gracefully
+  const [result, txHashResult] = await Promise.allSettled([
     query
       .where(eq('type', 'ask'))
       .where(eq('wallet', wallet))
@@ -183,6 +185,17 @@ export async function listAsksForWallet(wallet: string): Promise<Ask[]> {
       .limit(100)
       .fetch(),
   ]);
+
+  // Handle failures gracefully
+  const askResult = result.status === 'fulfilled' ? result.value : { entities: [] };
+  const txHashResultValue = txHashResult.status === 'fulfilled' ? txHashResult.value : { entities: [] };
+  
+  if (result.status === 'rejected') {
+    console.error('Error fetching asks for wallet:', result.reason);
+  }
+  if (txHashResult.status === 'rejected') {
+    console.error('Error fetching ask_txhash for wallet:', txHashResult.reason);
+  }
 
   const txHashMap: Record<string, string> = {};
   txHashResult.entities.forEach((entity: any) => {
@@ -215,7 +228,7 @@ export async function listAsksForWallet(wallet: string): Promise<Ask[]> {
     }
   });
 
-  return result.entities.map((entity: any) => {
+  return askResult.entities.map((entity: any) => {
     let payload: any = {};
     try {
       if (entity.payload) {
