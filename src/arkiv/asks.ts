@@ -198,7 +198,7 @@ export async function listAsksForWallet(wallet: string): Promise<Ask[]> {
   }
 
   const txHashMap: Record<string, string> = {};
-  txHashResult.entities.forEach((entity: any) => {
+  txHashResultValue.entities.forEach((entity: any) => {
     const attrs = entity.attributes || {};
     const getAttr = (key: string): string => {
       if (Array.isArray(attrs)) {
