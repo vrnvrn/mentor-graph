@@ -686,7 +686,27 @@ export default function Me() {
     );
   }
 
-  if (!data) {
+  // Show error if there's an explicit error, but allow empty data to display
+  if (error) {
+    return (
+      <main style={{ 
+        minHeight: '100vh',
+        backgroundColor: theme.bg,
+        transition: 'background-color 0.3s ease',
+        width: '100%',
+        margin: 0,
+        padding: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div style={{ color: theme.errorText }}>{error}</div>
+      </main>
+    );
+  }
+
+  // If no data yet and not loading, show error (shouldn't happen, but safety check)
+  if (!data && !loading) {
     return (
       <main style={{ 
         minHeight: '100vh',
@@ -703,6 +723,48 @@ export default function Me() {
       </main>
     );
   }
+
+  // If data is null/undefined, initialize with empty structure to allow rendering
+  // Use data if available, otherwise create empty structure
+  if (!data) {
+    // Still loading or error - wait for it
+    if (loading) {
+      return (
+        <main style={{ 
+          minHeight: '100vh',
+          backgroundColor: theme.bg,
+          transition: 'background-color 0.3s ease',
+          width: '100%',
+          margin: 0,
+          padding: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <div style={{ color: theme.textSecondary }}>Loading...</div>
+        </main>
+      );
+    }
+    // Not loading and no data - show error
+    return (
+      <main style={{ 
+        minHeight: '100vh',
+        backgroundColor: theme.bg,
+        transition: 'background-color 0.3s ease',
+        width: '100%',
+        margin: 0,
+        padding: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div style={{ color: theme.errorText }}>{error || 'Error loading data'}</div>
+      </main>
+    );
+  }
+
+  // Data is available - use it
+  const displayData = data;
 
   // Bioluminescent forest background pattern
   const forestPattern = `data:image/svg+xml,${encodeURIComponent(`
